@@ -60,10 +60,9 @@ namespace lbcrypto {
 template <class Element>
 class FHEBase {
     // TODO: should we use just one error message instead of a few (see below)
-    constexpr static std::string_view NOT_IMPLEMENTED_ERROR = "Not implemented for this scheme";
-    constexpr static std::string_view NOT_SUPPORTED_ERROR = "Not supported for this scheme";
+    constexpr static std::string_view NOT_IMPLEMENTED_ERROR      = "Not implemented for this scheme";
+    constexpr static std::string_view NOT_SUPPORTED_ERROR        = "Not supported for this scheme";
     constexpr static std::string_view NOT_SUPPORTED_SIMPLE_ERROR = "Not supported";
-
 
 public:
     virtual ~FHEBase() = default;
@@ -87,10 +86,11 @@ public:
    * @param slots - number of slots to be bootstrapped
    * @param correctionFactor - value to rescale message by to improve precision. If set to 0, we use the default logic. This value is only used when NATIVE_SIZE=64
    * @param precompute - flag specifying whether to precompute the plaintexts for encoding and decoding.
+   * @param BTSlotsEncoding - flag specifying whether the approximate modular reduction happens over the message being in slots or coefficients.
    */
     virtual void EvalBootstrapSetup(const CryptoContextImpl<Element>& cc, std::vector<uint32_t> levelBudget,
                                     std::vector<uint32_t> dim1, uint32_t slots, uint32_t correctionFactor,
-                                    bool precompute) {
+                                    bool precompute, bool BTSlotsEncoding) {
         OPENFHE_THROW(NOT_SUPPORTED_SIMPLE_ERROR);
     }
 
@@ -134,6 +134,11 @@ public:
     virtual Ciphertext<Element> EvalBootstrap(ConstCiphertext<Element>& ciphertext, uint32_t numIterations,
                                               uint32_t precision) const {
         OPENFHE_THROW(NOT_IMPLEMENTED_ERROR);
+    }
+
+    virtual Ciphertext<Element> EvalBootstrapStCFirst(ConstCiphertext<Element>& ciphertext, uint32_t numIterations,
+                                                      uint32_t precision) const {
+        OPENFHE_THROW("EvalBootstrap is not implemented for this scheme");
     }
 
     virtual void EvalFBTSetup(const CryptoContextImpl<Element>& cc, const std::vector<std::complex<double>>& coeffs,
