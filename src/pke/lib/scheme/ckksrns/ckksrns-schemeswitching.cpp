@@ -54,6 +54,7 @@
 #include <vector>
 
 // K = 16
+// EvalChebyshevCoefficients([](double x) -> double {return std::pow(2.*M_PI, -1./8.) * std::cos(2.*M_PI/8. * (x - 0.25));}, -16, 16, 117)
 static constexpr std::initializer_list<double> g_coefficientsFHEW16{
     0.2455457340168511,     -0.04791906488334782,   0.2838870204084082,     -0.02994453873551349,
     0.3557652261903648,     0.01510656188507299,    0.2953294667450001,     0.07120360233373937,
@@ -87,6 +88,7 @@ static constexpr std::initializer_list<double> g_coefficientsFHEW16{
     -6.975352498995555e-16, -8.743006318923108e-16};
 
 // K = 128
+// EvalChebyshevCoefficients([](double x) -> double {return std::pow(2.*M_PI, -1./8.) * std::cos(2.*M_PI/8. * (x - 0.25));}, -128, 128, 159)
 static constexpr std::initializer_list<double> g_coefficientsFHEW128_9{
     0.08761193238226354,    -0.01738402917379392,   0.08935060894767313,    -0.01667686631436392,
     0.09435445639097996,    -0.01518333497826596,   0.1019473189108075,     -0.01276275748916528,
@@ -129,6 +131,7 @@ static constexpr std::initializer_list<double> g_coefficientsFHEW128_9{
     -1.620799477984723e-15, 4.003965342611375e-16,  -5.245330582249314e-16, 1.754761547401069e-15,
     -5.0481471966847e-16,   -4.722624632690369e-16, 1.628901569091919e-16,  -1.219903204684612e-15};
 
+// EvalChebyshevCoefficients([](double x) -> double {return std::pow(2.*M_PI, -1./8.) * std::cos(2.*M_PI/8. * (x - 0.25));}, -128, 128, 118)
 static constexpr std::initializer_list<double> g_coefficientsFHEW128_8{
     0.08761193238226343,    -0.01738402917379268,  0.08935060894767202,   -0.0166768663143651,   0.09435445639098095,
     -0.01518333497826714,   0.1019473189108076,    -0.01276275748916462,  0.1108826554741475,    -0.009252446966171845,
@@ -1553,7 +1556,7 @@ Ciphertext<DCRTPoly> SWITCHCKKSRNS::EvalFHEWtoCKKS(std::vector<std::shared_ptr<L
     if (!LWECiphertexts.size())
         OPENFHE_THROW("Empty input FHEW ciphertext vector");
 
-    // This is the number of CKKS slots to use in eg_coefficientsFHEW128_9ncoding
+    // This is the number of CKKS slots to use in encoding
     const uint32_t slots = (numSlots == 0) ? m_numSlotsCKKS : numSlots;
 
     uint32_t numLWECtxts = LWECiphertexts.size();

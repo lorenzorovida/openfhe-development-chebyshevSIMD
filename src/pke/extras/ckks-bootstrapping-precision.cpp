@@ -43,6 +43,7 @@ Specifically, we used this to choose the default correction factor for 64-bit FL
 using namespace lbcrypto;
 
 double MeasureBootstrapPrecision(uint32_t numSlots, uint32_t correctionFactor);
+double MeasureStCFirstBootstrapPrecision(uint32_t numSlots, uint32_t correctionFactor);
 
 double CalculateApproximationError(const std::vector<std::complex<double>>& result,
                                    const std::vector<std::complex<double>>& expectedResult) {
@@ -62,20 +63,22 @@ double CalculateApproximationError(const std::vector<std::complex<double>>& resu
 int main(int argc, char* argv[]) {
 #if NATIVEINT == 64
     size_t numIterations           = 10;
-    size_t maxCorrectionFactor     = 15;
-    std::vector<uint32_t> slotsVec = {1 << 3, 1 << 11};
+    size_t maxCorrectionFactor     = 10;
+    std::vector<uint32_t> slotsVec = {1 << 9, 1 << 11, 1 << 15};
     for (uint32_t numSlots : slotsVec) {
-        for (size_t correctionFactor = 1; correctionFactor <= maxCorrectionFactor; correctionFactor++) {
-            std::cout << "=======================================================================" << std::endl;
+        for (size_t correctionFactor = maxCorrectionFactor; correctionFactor <= maxCorrectionFactor;
+             correctionFactor++) {
+            std::cout << "`=======================================================================" << std::endl;
             std::cout << "Number of slots: " << numSlots << std::endl;
             std::cout << "Correction Factor: " << correctionFactor << std::endl;
             double precision = 0.0;
             for (size_t i = 0; i < numIterations; i++) {
                 precision += MeasureBootstrapPrecision(numSlots, correctionFactor);
+                // precision += MeasureStCFirstBootstrapPrecision(numSlots, correctionFactor);
             }
             precision /= numIterations;
             std::cout << "Average precision over " << numIterations << " iterations: " << precision << std::endl;
-            std::cout << "=======================================================================" << std::endl;
+            std::cout << "`=======================================================================" << std::endl;
         }
     }
 #endif
@@ -88,10 +91,10 @@ double MeasureBootstrapPrecision(uint32_t numSlots, uint32_t correctionFactor) {
     parameters.SetSecretKeyDist(secretKeyDist);
 
     parameters.SetSecurityLevel(HEStd_NotSet);
-    parameters.SetRingDim(1 << 12);
+    parameters.SetRingDim(1 << 16);
 
     ScalingTechnique rescaleTech = FLEXIBLEAUTOEXT;
-    usint dcrtBits               = 59;
+    usint dcrtBits               = 50;
     usint firstMod               = 60;
     parameters.SetScalingModSize(dcrtBits);
     parameters.SetScalingTechnique(rescaleTech);
@@ -140,5 +143,68 @@ double MeasureBootstrapPrecision(uint32_t numSlots, uint32_t correctionFactor) {
     result->SetLength(numSlots);
 
     double precision = CalculateApproximationError(ptxt->GetCKKSPackedValue(), result->GetCKKSPackedValue());
+    return precision;
+}
+
+double MeasureStCFirstBootstrapPrecision(uint32_t numSlots, uint32_t correctionFactor) {
+    CCParams<CryptoContextCKKSRNS> parameters;
+
+    SecretKeyDist secretKeyDist = UNIFORM_TERNARY;
+    parameters.SetSecretKeyDist(secretKeyDist);
+
+    parameters.SetSecurityLevel(HEStd_NotSet);
+    parameters.SetRingDim(1 << 16);
+
+    ScalingTechnique rescaleTech = FLEXIBLEAUTOEXT;
+    usint dcrtBits               = 50;
+    usint firstMod               = 60;
+    parameters.SetScalingModSize(dcrtBits);
+    parameters.SetScalingTechnique(rescaleTech);
+    parameters.SetFirstModSize(firstMod);
+
+    std::vector<uint32_t> levelBudget      = {3, 3};
+    std::vector<uint32_t> bsgsDim          = {0, 0};
+    uint32_t levelsAvailableAfterBootstrap = 10 + levelBudget[1];
+    usint depth = levelsAvailableAfterBootstrap + FHECKKSRNS::GetBootstrapDepth({levelBudget[0], 0}, secretKeyDist);
+    parameters.SetMultiplicativeDepth(depth);
+
+    CryptoContext<DCRTPoly> cryptoContext = GenCryptoContext(parameters);
+
+    cryptoContext->Enable(PKE);
+    cryptoContext->Enable(KEYSWITCH);
+    cryptoContext->Enable(LEVELEDSHE);
+    cryptoContext->Enable(ADVANCEDSHE);
+    cryptoContext->Enable(FHE);
+
+    cryptoContext->EvalBootstrapSetup(levelBudget, bsgsDim, numSlots, correctionFactor, true, true);
+
+    auto keyPair = cryptoContext->KeyGen();
+    cryptoContext->EvalMultKeyGen(keyPair.secretKey);
+    cryptoContext->EvalBootstrapKeyGen(keyPair.secretKey, numSlots);
+
+    // Generate random input
+    std::vector<double> x;
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<> dis(0.0, 1.0);
+    for (size_t i = 0; i < numSlots; i++) {
+        x.push_back(dis(gen));
+    }
+
+    Plaintext ptxt = cryptoContext->MakeCKKSPackedPlaintext(x, 1, depth - 1 - levelBudget[1], nullptr, numSlots);
+    ptxt->SetLength(numSlots);
+
+    Ciphertext<DCRTPoly> ciph = cryptoContext->Encrypt(keyPair.publicKey, ptxt);
+
+    auto ciphertextAfter = cryptoContext->EvalBootstrap(ciph);
+
+    Plaintext result;
+    cryptoContext->Decrypt(keyPair.secretKey, ciphertextAfter, &result);
+    result->SetLength(numSlots);
+
+    double precision = CalculateApproximationError(ptxt->GetCKKSPackedValue(), result->GetCKKSPackedValue());
+
+    cryptoContext->ClearStaticMapsAndVectors();
+
     return precision;
 }
