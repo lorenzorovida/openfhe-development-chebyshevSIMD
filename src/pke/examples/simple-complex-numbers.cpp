@@ -44,10 +44,12 @@ using namespace std::literals;
 
 void SimpleComplexNumbers();
 void SimpleBootstrappingComplex();
+void SimpleBootstrappingStCFirstComplex();
 
 int main() {
-    SimpleComplexNumbers();
+    // SimpleComplexNumbers();
     SimpleBootstrappingComplex();
+    SimpleBootstrappingStCFirstComplex();
     return 0;
 }
 
@@ -356,7 +358,8 @@ void SimpleBootstrappingComplex() {
     * you do not need to set the ring dimension.
     */
     parameters.SetSecurityLevel(HEStd_NotSet);
-    parameters.SetRingDim(1 << 12);
+    usint ringDim = 1 << 7;
+    parameters.SetRingDim(ringDim);
 
     /*  A3) Scaling parameters.
     * By default, we set the modulus sizes and rescaling technique to the following values
@@ -387,14 +390,24 @@ void SimpleBootstrappingComplex() {
    */
     parameters.SetCKKSDataType(COMPLEX);
 
-    /*  A5) Multiplicative depth.
+    /* A5) Batch size.
+   * Bootstrapping fewer or equal than N/4 complex numbers in the StC variant of bootstrapping requires evaluating
+   * the modular approximation polynomial on a single ciphertext, while bootstrapping N/2 complex numbers
+   * requires evaluating the modular approximation polynomial on two ciphertexts. For comparison,
+   * bootstrapping up to N/2 real numbers in the StC variant of bootstrapping requires evaluating the modular
+   * approximation polynomial on a single ciphertext.
+   */
+    usint numSlots = ringDim / 16;
+    parameters.SetBatchSize(numSlots);
+
+    /*  A6) Multiplicative depth.
     * The goal of bootstrapping is to increase the number of available levels we have, or in other words,
     * to dynamically increase the multiplicative depth. However, the bootstrapping procedure itself
     * needs to consume a few levels to run. We compute the number of bootstrapping levels required
     * using GetBootstrapDepth, and add it to levelsAvailableAfterBootstrap to set our initial multiplicative
     * depth. We recommend using the input parameters below to get started.
     */
-    std::vector<uint32_t> levelBudget = {4, 4};
+    std::vector<uint32_t> levelBudget = {2, 2};
 
     // Note that the actual number of levels avalailable after bootstrapping before next bootstrapping
     // will be levelsAvailableAfterBootstrap - 1 because an additional level
@@ -411,12 +424,10 @@ void SimpleBootstrappingComplex() {
     cryptoContext->Enable(ADVANCEDSHE);
     cryptoContext->Enable(FHE);
 
-    usint ringDim = cryptoContext->GetRingDimension();
-    // This is the maximum number of slots that can be used for full packing.
-    usint numSlots = ringDim / 2;
-    std::cout << "CKKS scheme is using ring dimension " << ringDim << std::endl << std::endl;
+    std::cout << "CKKS scheme is using ring dimension " << ringDim << " and number of slots " << numSlots << std::endl
+              << std::endl;
 
-    cryptoContext->EvalBootstrapSetup(levelBudget);
+    cryptoContext->EvalBootstrapSetup(levelBudget, {0, 0}, numSlots);
 
     auto keyPair = cryptoContext->KeyGen();
     cryptoContext->EvalMultKeyGen(keyPair.secretKey);
@@ -424,10 +435,143 @@ void SimpleBootstrappingComplex() {
 
     std::vector<std::complex<double>> x = {0.25 + 0.25i, 0.5 - 0.5i, 0.75 + 0.75i, 1.0 - 1.i,
                                            2.0 + 2.i,    3.0 - 3.i,  4.0 + 4.i,    5.0 - 5.i};
-    size_t encodedLength                = x.size();
+    if (x.size() < numSlots)
+        x = Fill<std::complex<double>>(x, numSlots);
+    size_t encodedLength = x.size();
 
     // We start with a depleted ciphertext that has used up all of its levels.
     Plaintext ptxt = cryptoContext->MakeCKKSPackedPlaintext(x, 1, depth - 1);
+
+    ptxt->SetLength(encodedLength);
+    std::cout << "Input: " << ptxt << std::endl;
+
+    Ciphertext<DCRTPoly> ciph = cryptoContext->Encrypt(keyPair.publicKey, ptxt);
+
+    std::cout << "Initial number of levels remaining: " << depth - ciph->GetLevel() << std::endl;
+
+    // Perform the bootstrapping operation. The goal is to increase the number of levels remaining
+    // for HE computation.
+    auto ciphertextAfter = cryptoContext->EvalBootstrap(ciph);
+
+    std::cout << "Number of levels remaining after bootstrapping: "
+              << depth - ciphertextAfter->GetLevel() - (ciphertextAfter->GetNoiseScaleDeg() - 1) << std::endl
+              << std::endl;
+
+    Plaintext result;
+    cryptoContext->Decrypt(keyPair.secretKey, ciphertextAfter, &result);
+    result->SetLength(encodedLength);
+    std::cout << "Output after bootstrapping \n\t" << result << std::endl;
+}
+
+void SimpleBootstrappingStCFirstComplex() {
+    std::cout << "\n=================Bootstrapping Complex Numbers with StC transformation first"
+                 "====================="
+              << std::endl;
+
+    CCParams<CryptoContextCKKSRNS> parameters;
+    // A. Specify main parameters
+    /*  A1) Secret key distribution
+    * The secret key distribution for CKKS should either be SPARSE_TERNARY or UNIFORM_TERNARY.
+    * The SPARSE_TERNARY distribution was used in the original CKKS paper,
+    * but in this example, we use UNIFORM_TERNARY because this is included in the homomorphic
+    * encryption standard.
+    */
+    SecretKeyDist secretKeyDist = UNIFORM_TERNARY;
+    parameters.SetSecretKeyDist(secretKeyDist);
+
+    /*  A2) Desired security level based on FHE standards.
+    * In this example, we use the "NotSet" option, so the example can run more quickly with
+    * a smaller ring dimension. Note that this should be used only in
+    * non-production environments, or by experts who understand the security
+    * implications of their choices. In production-like environments, we recommend using
+    * HEStd_128_classic, HEStd_192_classic, or HEStd_256_classic for 128-bit, 192-bit,
+    * or 256-bit security, respectively. If you choose one of these as your security level,
+    * you do not need to set the ring dimension.
+    */
+    parameters.SetSecurityLevel(HEStd_NotSet);
+    usint ringDim = 1 << 7;
+    parameters.SetRingDim(ringDim);
+
+    /*  A3) Scaling parameters.
+    * By default, we set the modulus sizes and rescaling technique to the following values
+    * to obtain a good precision and performance tradeoff. We recommend keeping the parameters
+    * below unless you are an FHE expert.
+    */
+#if NATIVEINT == 128
+    ScalingTechnique rescaleTech = FIXEDAUTO;
+    usint dcrtBits               = 78;
+    usint firstMod               = 89;
+#else
+    ScalingTechnique rescaleTech = FLEXIBLEAUTO;
+    usint dcrtBits               = 59;
+    usint firstMod               = 60;
+#endif
+
+    parameters.SetScalingModSize(dcrtBits);
+    parameters.SetScalingTechnique(rescaleTech);
+    parameters.SetFirstModSize(firstMod);
+
+    /* A4) Data type to be encoded.
+   * For a ring dimension N, CKKS plaintexts can pack vectors of up to N/2 values.
+   * Packing N/2 complex numbers achieves better throughput, as it translates to
+   * packing N real numbers. However, packing complex numbers does not currently allow
+   * noise estimation (since the noise estimation is uses the imaginary slots).
+   * By default, the CKKSDataType is set to REAL, which enables packing up to N/2
+   * real numbers and allows noise estimation.
+   */
+    parameters.SetCKKSDataType(COMPLEX);
+
+    /* A5) Batch size.
+   * Bootstrapping fewer or equal than N/4 complex numbers in the StC variant of bootstrapping requires evaluating
+   * the modular approximation polynomial on a single ciphertext, while bootstrapping N/2 complex numbers
+   * requires evaluating the modular approximation polynomial on two ciphertexts. For comparison,
+   * bootstrapping up to N/2 real numbers in the StC variant of bootstrapping requires evaluating the modular
+   * approximation polynomial on a single ciphertext.
+   */
+    usint numSlots = ringDim / 16;
+    parameters.SetBatchSize(numSlots);
+
+    /*  A6) Multiplicative depth.
+    * The goal of bootstrapping is to increase the number of available levels we have, or in other words,
+    * to dynamically increase the multiplicative depth. However, the bootstrapping procedure itself
+    * needs to consume a few levels to run. We compute the number of bootstrapping levels required
+    * using GetBootstrapDepth, and add it to levelsAvailableAfterBootstrap to set our initial multiplicative
+    * depth. We recommend using the input parameters below to get started.
+    */
+    std::vector<uint32_t> levelBudget = {2, 2};
+
+    // Note that the actual number of levels avalailable after bootstrapping before next bootstrapping
+    // will be levelsAvailableAfterBootstrap - 1 because an additional level
+    // is used for scaling the ciphertext before next bootstrapping (in 64-bit CKKS bootstrapping)
+    uint32_t levelsAvailableAfterBootstrap = 10 + levelBudget[1];
+    usint depth = levelsAvailableAfterBootstrap + FHECKKSRNS::GetBootstrapDepth({levelBudget[0], 0}, secretKeyDist);
+    parameters.SetMultiplicativeDepth(depth);
+
+    CryptoContext<DCRTPoly> cryptoContext = GenCryptoContext(parameters);
+
+    cryptoContext->Enable(PKE);
+    cryptoContext->Enable(KEYSWITCH);
+    cryptoContext->Enable(LEVELEDSHE);
+    cryptoContext->Enable(ADVANCEDSHE);
+    cryptoContext->Enable(FHE);
+
+    std::cout << "CKKS scheme is using ring dimension " << ringDim << " and number of slots " << numSlots << std::endl
+              << std::endl;
+
+    cryptoContext->EvalBootstrapSetup(levelBudget, {0, 0}, numSlots, 0, true, true);
+
+    auto keyPair = cryptoContext->KeyGen();
+    cryptoContext->EvalMultKeyGen(keyPair.secretKey);
+    cryptoContext->EvalBootstrapKeyGen(keyPair.secretKey, numSlots);
+
+    std::vector<std::complex<double>> x = {0.25 + 0.25i, 0.5 - 0.5i, 0.75 + 0.75i, 1.0 - 1.i,
+                                           2.0 + 2.i,    3.0 - 3.i,  4.0 + 4.i,    5.0 - 5.i};
+    if (x.size() < numSlots)
+        x = Fill<std::complex<double>>(x, numSlots);
+    size_t encodedLength = x.size();
+
+    // We start with a depleted ciphertext that has used up all of its levels.
+    Plaintext ptxt = cryptoContext->MakeCKKSPackedPlaintext(x, 1, depth - 1 - levelBudget[1]);
 
     ptxt->SetLength(encodedLength);
     std::cout << "Input: " << ptxt << std::endl;

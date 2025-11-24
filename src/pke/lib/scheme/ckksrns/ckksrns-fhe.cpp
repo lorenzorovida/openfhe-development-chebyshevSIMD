@@ -105,14 +105,18 @@ void FHECKKSRNS::EvalBootstrapSetup(const CryptoContextImpl<DCRTPoly>& cc, std::
             // We chose the best fit line from our experiments by running ckks-bootstrapping-precision.cpp.
             // The spreadsheet with our experiments is here:
             // https://docs.google.com/spreadsheets/d/1WqmwBUMNGlX6Uvs9qLXt5yeddtCyWPP55BbJPu5iPAM/edit?usp=sharing
-            uint32_t tmp(std::round(-0.265 * (2 * std::log2(M / 2) + std::log2(slots)) + 19.1));
-            m_correctionFactor = std::clamp<uint32_t>(tmp, 7, 13);
+            uint32_t tmp       = (BTSlotsEncoding == false) ?
+                                     std::round(-0.265 * (2 * std::log2(M / 2) + std::log2(slots)) + 19.1) :
+                                     std::round(-0.1887 * (2 * std::log2(M / 2) + std::log2(slots)) + 18.763);
+            m_correctionFactor = std::clamp<uint32_t>(tmp, 7, 14);
         }
         else {
-            m_correctionFactor = 9;
+            // m_correctionFactor = (BTSlotsEncoding == false) ? 9 : 10;
+            uint32_t tmp       = (BTSlotsEncoding == false) ?
+                                     std::round(-0.1871 * (2 * std::log2(M / 2) + std::log2(slots)) + 14.829) :
+                                     std::round(-0.108 * (2 * std::log2(M / 2) + std::log2(slots)) + 14.069);
+            m_correctionFactor = std::clamp<uint32_t>(tmp, 6, 13);
         }
-        // m_correctionFactor += BTSlotsEncoding * std::floor(std::log2(slots) / 2); // Add correction equivalent to 1/sqrt(slots) or 4
-        // std::cerr << "Extra correction for slots = " << slots << ": " << BTSlotsEncoding * std::floor(std::log2(slots) / 2) << std::endl;
     }
     else {
         m_correctionFactor = correctionFactor;
@@ -214,6 +218,8 @@ void FHECKKSRNS::EvalBootstrapSetup(const CryptoContextImpl<DCRTPoly>& cc, std::
         else {
             lDec = (2 + (st == FLEXIBLEAUTOEXT)) * compositeDegree;
         }
+
+        // std::cerr << "lEnc = " << lEnc << ", lDec = " << lDec << std::endl;
 
         bool isLTBootstrap = (precom->m_paramsEnc.lvlb == 1) && (precom->m_paramsDec.lvlb == 1);
 
@@ -515,12 +521,12 @@ Ciphertext<DCRTPoly> FHECKKSRNS::EvalBootstrap(ConstCiphertext<DCRTPoly>& cipher
     double qDouble = GetBigModulus(cryptoParams);
     double powP    = std::pow(2, cryptoParams->GetPlaintextModulus());
     int32_t deg    = std::round(std::log2(qDouble / powP));
-    // #if NATIVEINT != 128
-    //     if (deg > static_cast<int32_t>(m_correctionFactor) && st != COMPOSITESCALINGAUTO && st != COMPOSITESCALINGMANUAL) {
-    //         OPENFHE_THROW("Degree [" + std::to_string(deg) + "] must be less than or equal to the correction factor [" +
-    //                       std::to_string(m_correctionFactor) + "].");
-    //     }
-    // #endif
+#if NATIVEINT != 128
+    if (deg > static_cast<int32_t>(m_correctionFactor) && st != COMPOSITESCALINGAUTO && st != COMPOSITESCALINGMANUAL) {
+        OPENFHE_THROW("Degree [" + std::to_string(deg) + "] must be less than or equal to the correction factor [" +
+                      std::to_string(m_correctionFactor) + "].");
+    }
+#endif
     uint32_t correction = m_correctionFactor - deg;
     double post         = std::pow(2, static_cast<double>(deg));
 
@@ -846,7 +852,6 @@ Ciphertext<DCRTPoly> FHECKKSRNS::EvalBootstrapStCFirst(ConstCiphertext<DCRTPoly>
     auto initSizeQ           = ciphertext->GetElements()[0].GetNumOfElements();
     uint32_t compositeDegree = cryptoParams->GetCompositeDegree();
 
-    // Andreea: NOT TESTED FOR MULTIPLE ITERATIONS
     if (numIterations > 1) {
         // Step 1: Get the input.
         uint32_t powerOfTwoModulus = 1 << precision;
@@ -917,12 +922,12 @@ Ciphertext<DCRTPoly> FHECKKSRNS::EvalBootstrapStCFirst(ConstCiphertext<DCRTPoly>
     double qDouble = GetBigModulus(cryptoParams);
     double powP    = std::pow(2, cryptoParams->GetPlaintextModulus());
     int32_t deg    = std::round(std::log2(qDouble / powP));
-    // #if NATIVEINT != 128
-    //     if (deg > static_cast<int32_t>(m_correctionFactor) && st != COMPOSITESCALINGAUTO && st != COMPOSITESCALINGMANUAL) {
-    //         OPENFHE_THROW("Degree [" + std::to_string(deg) + "] must be less than or equal to the correction factor [" +
-    //                       std::to_string(m_correctionFactor) + "].");
-    //     }
-    // #endif
+#if NATIVEINT != 128
+    if (deg > static_cast<int32_t>(m_correctionFactor) && st != COMPOSITESCALINGAUTO && st != COMPOSITESCALINGMANUAL) {
+        OPENFHE_THROW("Degree [" + std::to_string(deg) + "] must be less than or equal to the correction factor [" +
+                      std::to_string(m_correctionFactor) + "].");
+    }
+#endif
     uint32_t correction = m_correctionFactor - deg;
     double post         = std::pow(2, static_cast<double>(deg));
 
@@ -973,10 +978,8 @@ Ciphertext<DCRTPoly> FHECKKSRNS::EvalBootstrapStCFirst(ConstCiphertext<DCRTPoly>
     // Dropping Unnecessary Towers
     //------------------------------------------------------------------------------
     // Only work with the minimum number of required levels.
-    // Andreea: add an exception if there if there are not enough levels
     auto ctxtDepleted = ciphertext->Clone();
     algo->ModReduceInternalInPlace(ctxtDepleted, compositeDegree * (ctxtDepleted->GetNoiseScaleDeg() - 1));
-
     // std::cerr << "After ModReduceInternalInPlace: ctxtDepleted->GetLevel(): " << ctxtDepleted->GetLevel()
     //           << ", ctxtDepleted->GetNoiseScaleDeg(): " << ctxtDepleted->GetNoiseScaleDeg() << std::endl;
     auto levelToReduce =
@@ -985,11 +988,19 @@ Ciphertext<DCRTPoly> FHECKKSRNS::EvalBootstrapStCFirst(ConstCiphertext<DCRTPoly>
     //           << ctxtDepleted->GetElements()[0].GetNumOfElements() - 1 << " levels remaining." << std::endl;
 
     size_t sizeQl = ctxtDepleted->GetElements()[0].GetNumOfElements();
-    if (levelToReduce > 0 && levelToReduce < sizeQl)
-        cc->LevelReduceInPlace(ctxtDepleted, nullptr, levelToReduce);
+    if (levelToReduce > 0 && levelToReduce < sizeQl) {
+        cc->GetScheme()->LevelReduceInternalInPlace(ctxtDepleted, compositeDegree * levelToReduce);
+    }
+    else if (levelToReduce >= sizeQl) {
+        OPENFHE_THROW("Not enough levels to perform Bootstrapping.");
+    }
+
+    // std::cerr << "After dropping towers: ctxtDepleted->GetLevel(): " << ctxtDepleted->GetLevel()
+    //           << ", ctxtDepleted->GetNoiseScaleDeg(): " << ctxtDepleted->GetNoiseScaleDeg() << std::endl;
 
     Ciphertext<DCRTPoly> ctxtEnc;
     // Andreea: this will need to change for complexPacking
+    std::cerr << "slots = " << slots << std::endl;
     if (slots <= N / 2) {
         //------------------------------------------------------------------------------
         // Running SlotToCoeff
@@ -998,9 +1009,6 @@ Ciphertext<DCRTPoly> FHECKKSRNS::EvalBootstrapStCFirst(ConstCiphertext<DCRTPoly>
         if (st != FIXEDMANUAL)
             algo->ModReduceInternalInPlace(
                 ctxtDepleted, compositeDegree * (ctxtDepleted->GetNoiseScaleDeg() - 1));  // Andreea: double check
-
-        // std::cerr << "Before STC: ctxtDepleted->GetLevel(): " << ctxtDepleted->GetLevel()
-        //           << ", ctxtDepleted->GetNoiseScaleDeg(): " << ctxtDepleted->GetNoiseScaleDeg() << std::endl;
 
         // Linear transform for decoding
         ctxtDepleted = (isLTBootstrap) ? EvalLinearTransform(p.m_U0Pre, ctxtDepleted) :
@@ -1019,9 +1027,6 @@ Ciphertext<DCRTPoly> FHECKKSRNS::EvalBootstrapStCFirst(ConstCiphertext<DCRTPoly>
         std::cout << "Decoding time: " << timeDecode / 1000.0 << " s" << std::endl;
 #endif
 
-        // std::cerr << "After STC: ctxtDepleted->GetLevel(): " << ctxtDepleted->GetLevel()
-        //           << ", ctxtDepleted->GetNoiseScaleDeg(): " << ctxtDepleted->GetNoiseScaleDeg() << std::endl;
-
         //------------------------------------------------------------------------------
         // RAISING THE MODULUS
         //------------------------------------------------------------------------------
@@ -1035,13 +1040,7 @@ Ciphertext<DCRTPoly> FHECKKSRNS::EvalBootstrapStCFirst(ConstCiphertext<DCRTPoly>
         auto raised = ctxtDepleted->Clone();
         algo->ModReduceInternalInPlace(raised, compositeDegree * (raised->GetNoiseScaleDeg() - 1));
 
-        // std::cerr << "After ModReduceInternalInPlace(raised): raised->GetLevel(): " << raised->GetLevel()
-        //           << ", raised->GetNoiseScaleDeg(): " << raised->GetNoiseScaleDeg() << std::endl;
-
         AdjustCiphertext(raised, correction);
-
-        // std::cerr << "After Adjustment: raised->GetLevel(): " << raised->GetLevel()
-        //           << ", raised->GetNoiseScaleDeg(): " << raised->GetNoiseScaleDeg() << std::endl;
 
         if (compositeDegree > 1) {
             // RNS basis extension from level 0 RNS limbs to the raised RNS basis
