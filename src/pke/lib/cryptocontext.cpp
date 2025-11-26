@@ -867,9 +867,12 @@ template class CryptoContextImpl<DCRTPoly>;
 #define INSTANTIATE_FUNCTION_TEMPLATES(VECTOR_TYPE) \
     template Ciphertext<DCRTPoly> CryptoContextImpl<DCRTPoly>::EvalChebyshevSeries<VECTOR_TYPE>(ConstCiphertext<DCRTPoly>&, const std::vector<VECTOR_TYPE>&, double, double) const; \
     template Ciphertext<DCRTPoly> CryptoContextImpl<DCRTPoly>::EvalChebyshevSeriesLinear<VECTOR_TYPE>(ConstCiphertext<DCRTPoly>&, const std::vector<VECTOR_TYPE>&, double, double) const; \
-    template Ciphertext<DCRTPoly> CryptoContextImpl<DCRTPoly>::EvalChebyshevSeriesPS<VECTOR_TYPE>(ConstCiphertext<DCRTPoly>&, const std::vector<VECTOR_TYPE>&, double, double) const; \
+    template Ciphertext<DCRTPoly> CryptoContextImpl<DCRTPoly>::EvalChebyshevSeriesPS<VECTOR_TYPE>(ConstCiphertext<DCRTPoly>&, const std::vector<VECTOR_TYPE>&, double, double) const;     \
+    template Ciphertext<DCRTPoly> CryptoContextImpl<DCRTPoly>::EvalChebyshevSeriesPSBatch<VECTOR_TYPE>(ConstCiphertext<DCRTPoly>&, const std::vector<std::vector<VECTOR_TYPE>>&, double, double) const;     \
     template Ciphertext<DCRTPoly> CryptoContextImpl<DCRTPoly>::EvalLinearWSum<VECTOR_TYPE>(std::vector<ReadOnlyCiphertext<DCRTPoly>>&, const std::vector<VECTOR_TYPE>&) const; \
-    template Ciphertext<DCRTPoly> CryptoContextImpl<DCRTPoly>::EvalLinearWSumMutable<VECTOR_TYPE>(const std::vector<VECTOR_TYPE>&, std::vector<Ciphertext<DCRTPoly>>&) const; \
+    template Ciphertext<DCRTPoly> CryptoContextImpl<DCRTPoly>::EvalLinearWSumMutable<VECTOR_TYPE>(const std::vector<VECTOR_TYPE>&, std::vector<Ciphertext<DCRTPoly>>&) const;       \
+    template Ciphertext<DCRTPoly> CryptoContextImpl<DCRTPoly>::EvalLinearWSumBatch<VECTOR_TYPE>(std::vector<ReadOnlyCiphertext<DCRTPoly>>&, const std::vector<std::vector<VECTOR_TYPE>>&) const; \
+    template Ciphertext<DCRTPoly> CryptoContextImpl<DCRTPoly>::EvalLinearWSumMutableBatch<VECTOR_TYPE>(const std::vector<std::vector<VECTOR_TYPE>>&, std::vector<Ciphertext<DCRTPoly>>&) const; \
     template Ciphertext<DCRTPoly> CryptoContextImpl<DCRTPoly>::EvalPoly<VECTOR_TYPE>(ConstCiphertext<DCRTPoly>&, const std::vector<VECTOR_TYPE>&) const; \
     template Ciphertext<DCRTPoly> CryptoContextImpl<DCRTPoly>::EvalPolyLinear<VECTOR_TYPE>(ConstCiphertext<DCRTPoly>&, const std::vector<VECTOR_TYPE>&) const; \
     template Ciphertext<DCRTPoly> CryptoContextImpl<DCRTPoly>::EvalPolyPS<VECTOR_TYPE>(ConstCiphertext<DCRTPoly>&, const std::vector<VECTOR_TYPE>&) const;

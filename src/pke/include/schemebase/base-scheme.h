@@ -853,12 +853,30 @@ public:
     }
 
     template <typename VectorDataType = double>
+    Ciphertext<Element> EvalLinearWSumBatch(std::vector<ReadOnlyCiphertext<Element>>& ciphertextVec,
+                                       const std::vector<std::vector<VectorDataType>>& constantVec) const {
+        VerifyAdvancedSHEEnabled(__func__);
+        if (!ciphertextVec.size())
+            OPENFHE_THROW("Input ciphertext vector is empty");
+        return m_AdvancedSHE->EvalLinearWSumBatch(ciphertextVec, constantVec);
+    }
+
+    template <typename VectorDataType = double>
     Ciphertext<Element> EvalLinearWSumMutable(std::vector<Ciphertext<Element>>& ciphertextVec,
                                               const std::vector<VectorDataType>& constantVec) const {
         VerifyAdvancedSHEEnabled(__func__);
         if (!ciphertextVec.size())
             OPENFHE_THROW("Input ciphertext vector is empty");
         return m_AdvancedSHE->EvalLinearWSumMutable(ciphertextVec, constantVec);
+    }
+
+    template <typename VectorDataType = double>
+    Ciphertext<Element> EvalLinearWSumMutableBatch(std::vector<Ciphertext<Element>>& ciphertextVec,
+                                              const std::vector<std::vector<VectorDataType>>& constantVec) const {
+        VerifyAdvancedSHEEnabled(__func__);
+        if (!ciphertextVec.size())
+            OPENFHE_THROW("Input ciphertext vector is empty");
+        return m_AdvancedSHE->EvalLinearWSumMutableBatch(ciphertextVec, constantVec);
     }
 
     /////////////////////////////////////
@@ -940,6 +958,14 @@ public:
                                               double b) const {
         VerifyAdvancedSHEEnabled(__func__);
         return m_AdvancedSHE->EvalChebyshevSeriesPS(ciphertext, coefficients, a, b);
+    }
+
+    template <typename VectorDataType = double>
+    Ciphertext<Element> EvalChebyshevSeriesPSBatch(ConstCiphertext<Element>& ciphertext,
+                                              const std::vector<std::vector<VectorDataType>>& batchOfCoefficients,
+                                              double a, double b) const {
+        VerifyAdvancedSHEEnabled(__func__);
+        return m_AdvancedSHE->EvalChebyshevSeriesPSBatch(ciphertext, batchOfCoefficients, a, b);
     }
 
     /////////////////////////////////////

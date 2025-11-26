@@ -63,12 +63,29 @@ public:
     Ciphertext<DCRTPoly> EvalLinearWSum(std::vector<ReadOnlyCiphertext<DCRTPoly>>& ciphertexts,
                                         const std::vector<std::complex<double>>& constants) const override;
 
+    // Batched for SIMD Chebyshev
+    Ciphertext<DCRTPoly> EvalLinearWSumBatch(std::vector<ReadOnlyCiphertext<DCRTPoly>>& ciphertexts,
+                                        const std::vector<std::vector<int64_t>>& setOfConstants) const override;
+    Ciphertext<DCRTPoly> EvalLinearWSumBatch(std::vector<ReadOnlyCiphertext<DCRTPoly>>& ciphertexts,
+                                             const std::vector<std::vector<double>>& setOfConstants) const override;
+    Ciphertext<DCRTPoly> EvalLinearWSumBatch(std::vector<ReadOnlyCiphertext<DCRTPoly>>& ciphertexts,
+                                             const std::vector<std::vector<std::complex<double>>>& setOfConstants) const override;
+
+
     Ciphertext<DCRTPoly> EvalLinearWSumMutable(std::vector<Ciphertext<DCRTPoly>>& ciphertexts,
                                                const std::vector<int64_t>& constants) const override;
     Ciphertext<DCRTPoly> EvalLinearWSumMutable(std::vector<Ciphertext<DCRTPoly>>& ciphertexts,
                                                const std::vector<double>& constants) const override;
     Ciphertext<DCRTPoly> EvalLinearWSumMutable(std::vector<Ciphertext<DCRTPoly>>& ciphertexts,
                                                const std::vector<std::complex<double>>& constants) const override;
+
+    // Batched for SIMD Chebyshev
+    Ciphertext<DCRTPoly> EvalLinearWSumMutableBatch(std::vector<Ciphertext<DCRTPoly>>& ciphertexts,
+                                               const std::vector<std::vector<int64_t>>& batchOfConstants) const override;
+    Ciphertext<DCRTPoly> EvalLinearWSumMutableBatch(std::vector<Ciphertext<DCRTPoly>>& ciphertexts,
+                                                    const std::vector<std::vector<double>>& batchOfConstants) const override;
+    Ciphertext<DCRTPoly> EvalLinearWSumMutableBatch(std::vector<Ciphertext<DCRTPoly>>& ciphertexts,
+                                                    const std::vector<std::vector<std::complex<double>>>& batchOfConstants) const override;
 
     //------------------------------------------------------------------------------
     // EVAL POLYNOMIAL
@@ -160,6 +177,17 @@ public:
     Ciphertext<DCRTPoly> EvalChebyshevSeriesPS(ConstCiphertext<DCRTPoly>& ciphertext,
                                                const std::vector<std::complex<double>>& coefficients, double a,
                                                double b) const override;
+
+    //For batched SIMD Chebyshev
+    Ciphertext<DCRTPoly> EvalChebyshevSeriesPSBatch(ConstCiphertext<DCRTPoly>& ciphertext,
+                                               const std::vector<std::vector<int64_t>>& batchOfCoefficients, double a,
+                                               double b) const override;
+    Ciphertext<DCRTPoly> EvalChebyshevSeriesPSBatch(ConstCiphertext<DCRTPoly>& ciphertext,
+                                               const std::vector<std::vector<double>>& batchOfCoefficients, double a,
+                                               double b) const override;
+    Ciphertext<DCRTPoly> EvalChebyshevSeriesPSBatch(ConstCiphertext<DCRTPoly>& ciphertext,
+                                               const std::vector<std::vector<std::complex<double>>>& batchOfCoefficients,
+                                               double a, double b) const override;
 
     //------------------------------------------------------------------------------
     // EVAL LINEAR TRANSFORMATION

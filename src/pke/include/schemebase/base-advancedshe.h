@@ -122,6 +122,39 @@ public:
         OPENFHE_THROW("Not implemented for this scheme");
     }
 
+     /**
+    * Virtual function for computing the linear weighted sum of a
+    * vector of ciphertexts in a batched/parallelized way
+    * (useful for CKKS packing).
+    *
+    * Each vector of batchOfWeights represents a set of weights for a
+    * separate linear combination.
+    *
+    * This is a generalization of EvalLinearWSum where we can apply
+    * a different weight for each slot of the ciphertext
+    *
+    * @param ciphertextVec Vector of input ciphertexts to be combined.
+    * @param batchOfWeights Vector of vectors containing vectors of weights:
+    * @return Ciphertext containing the batched weighted sums.
+    *
+    * Notes:
+    * - The function requires can be implemented in SIMD schemes only
+    * - The size of each element in batchOfWeights must be equal to the number
+    *   of slots of the ciphertext
+    */
+    virtual Ciphertext<Element> EvalLinearWSumBatch(std::vector<ReadOnlyCiphertext<Element>>& ciphertextVec,
+                                               const std::vector<std::vector<int64_t>>& batchOfWeights) const {
+        OPENFHE_THROW("Not implemented for this scheme");
+    }
+    virtual Ciphertext<Element> EvalLinearWSumBatch(std::vector<ReadOnlyCiphertext<Element>>& ciphertextVec,
+                                                    const std::vector<std::vector<double>>& batchOfWeights) const {
+        OPENFHE_THROW("Not implemented for this scheme");
+    }
+    virtual Ciphertext<Element> EvalLinearWSumBatch(std::vector<ReadOnlyCiphertext<Element>>& ciphertextVec,
+                                                    const std::vector<std::vector<std::complex<double>>>& batchOfWeights) const {
+        OPENFHE_THROW("Not implemented for this scheme");
+    }
+
     /**
    * Function for computing the linear weighted sum of a
    * vector of ciphertexts. This is a mutable method,
@@ -141,6 +174,31 @@ public:
     }
     virtual Ciphertext<Element> EvalLinearWSumMutable(std::vector<Ciphertext<Element>>& ciphertextVec,
                                                       const std::vector<std::complex<double>>& weights) const {
+        OPENFHE_THROW("Not implemented for this scheme");
+    }
+
+
+     /**
+    * Virtual function for computing the linear weighted sum of a
+    * vector of ciphertexts in a batched/parallelized way
+    * (useful for CKKS packing). This is a mutable method,
+    * meaning that the level/depth of input ciphertexts may change.
+    *
+    *
+    * @param ciphertextVec Vector of input ciphertexts to be combined.
+    * @param batchOfWeights Vector of vectors containing vectors of weights:
+    * @return Ciphertext containing the batched weighted sums.
+    */
+    virtual Ciphertext<Element> EvalLinearWSumMutableBatch(std::vector<Ciphertext<Element>>& ciphertextVec,
+                                                           const std::vector<std::vector<int64_t>>& batchOfWeights) const {
+        OPENFHE_THROW("Not implemented for this scheme");
+    }
+    virtual Ciphertext<Element> EvalLinearWSumMutableBatch(std::vector<Ciphertext<Element>>& ciphertextVec,
+                                                           const std::vector<std::vector<double>>& batchOfWeights) const {
+        OPENFHE_THROW("Not implemented for this scheme");
+    }
+    virtual Ciphertext<Element> EvalLinearWSumMutableBatch(std::vector<Ciphertext<Element>>& ciphertextVec,
+                                                      const std::vector<std::vector<std::complex<double>>>& batchOfWeights) const {
         OPENFHE_THROW("Not implemented for this scheme");
     }
 
@@ -308,6 +366,7 @@ public:
         OPENFHE_THROW("Not implemented for this scheme");
     }
 
+
     virtual Ciphertext<Element> EvalChebyshevSeriesWithPrecomp(std::shared_ptr<seriesPowers<Element>> polys,
                                                                const std::vector<int64_t>& coefficients) const {
         OPENFHE_THROW("Not implemented for this scheme");
@@ -350,6 +409,23 @@ public:
     virtual Ciphertext<Element> EvalChebyshevSeriesPS(ConstCiphertext<Element>& ciphertext,
                                                       const std::vector<std::complex<double>>& coefficients, double a,
                                                       double b) const {
+        OPENFHE_THROW("Not implemented for this scheme");
+    }
+
+    //For batched SIMD Chebyshev
+    virtual Ciphertext<Element> EvalChebyshevSeriesPSBatch(ConstCiphertext<Element>& ciphertext,
+                                                      const std::vector<std::vector<int64_t>>& batchOfCoefficients, double a,
+                                                      double b) const {
+        OPENFHE_THROW("Not implemented for this scheme");
+    }
+    virtual Ciphertext<Element> EvalChebyshevSeriesPSBatch(ConstCiphertext<Element>& ciphertext,
+                                                      const std::vector<std::vector<double>>& batchOfCoefficients, double a,
+                                                      double b) const {
+        OPENFHE_THROW("Not implemented for this scheme");
+    }
+    virtual Ciphertext<Element> EvalChebyshevSeriesPSBatch(ConstCiphertext<Element>& ciphertext,
+                                                      const std::vector<std::vector<std::complex<double>>>& batchOfCoefficients,
+                                                      double a, double b) const {
         OPENFHE_THROW("Not implemented for this scheme");
     }
 

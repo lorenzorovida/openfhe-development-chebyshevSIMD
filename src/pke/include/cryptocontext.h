@@ -2723,6 +2723,13 @@ public:
         return EvalLinearWSum(ciphertextVec, constantsVec);
     }
 
+    //TODO commenta
+    template <typename VectorDataType = double>
+    Ciphertext<Element> EvalLinearWSumBatch(std::vector<ReadOnlyCiphertext<Element>>& ciphertextVec,
+                                       const std::vector<std::vector<VectorDataType>>& constantVec) const {
+        return GetScheme()->EvalLinearWSumBatch(ciphertextVec, constantVec);
+    }
+
     /**
     * @brief Computes a linear weighted sum using mutable ciphertexts (CKKS only).
     *
@@ -2747,6 +2754,13 @@ public:
     Ciphertext<Element> EvalLinearWSumMutable(const std::vector<VectorDataType>& constantsVec,
                                               std::vector<Ciphertext<Element>>& ciphertextVec) const {
         return EvalLinearWSumMutable(ciphertextVec, constantsVec);
+    }
+
+    //TODO Commenta
+    template <typename VectorDataType = double>
+    Ciphertext<Element> EvalLinearWSumMutableBatch(const std::vector<std::vector<VectorDataType>>& constantsVec,
+                                              std::vector<Ciphertext<Element>>& ciphertextVec) const {
+        return EvalLinearWSumMutableBatch( constantsVec, ciphertextVec);
     }
 
     //------------------------------------------------------------------------------
@@ -2907,6 +2921,28 @@ public:
                                               double b) const {
         ValidateCiphertext(ciphertext);
         return GetScheme()->EvalChebyshevSeriesPS(ciphertext, coefficients, a, b);
+    }
+
+    /**
+    * @brief Evaluates many Chebyshev interpolated polynomial using the Paterson-Stockmeyer method, one for
+    *        each slot. Ensure that the coefficients have all the same size and that the size of the
+    *        set of coefficients coincides with the number of slots.
+    *        Maps [a, b] to [-1, 1] using linear transformation 1 + 2(x-a)/(b-a). Supported only in CKKS.
+    *
+    * @param ciphertext    Input ciphertext.
+    * @param coefficients  Chebyshev series coefficients.
+    * @param a             Lower bound of argument for which the coefficients were found.
+    * @param b             Upper bound of argument for which the coefficients were found.
+    * @return Resulting ciphertext.
+    */
+    template <typename VectorDataType = double>
+    Ciphertext<Element> EvalChebyshevSeriesPSBatch(ConstCiphertext<Element>& ciphertext,
+                                              const std::vector<std::vector<VectorDataType>>& batchOfCoefficients, double a,
+                                              double b) const {
+        std::cout << "Provo" << std::endl;
+        ValidateCiphertext(ciphertext);
+        std::cout << "Figa" << std::endl;
+        return GetScheme()->EvalChebyshevSeriesPSBatch(ciphertext, batchOfCoefficients, a, b);
     }
 
     /**
