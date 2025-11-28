@@ -2758,9 +2758,9 @@ public:
 
     //TODO Commenta
     template <typename VectorDataType = double>
-    Ciphertext<Element> EvalLinearWSumMutableBatch(const std::vector<std::vector<VectorDataType>>& constantsVec,
-                                              std::vector<Ciphertext<Element>>& ciphertextVec) const {
-        return EvalLinearWSumMutableBatch( constantsVec, ciphertextVec);
+    Ciphertext<Element> EvalLinearWSumMutableBatch(std::vector<Ciphertext<Element>>& ciphertextVec,
+                                                   const std::vector<std::vector<VectorDataType>>& constantsVec) const {
+        return GetScheme()->EvalLinearWSumMutableBatch( ciphertextVec, constantsVec );
     }
 
     //------------------------------------------------------------------------------
