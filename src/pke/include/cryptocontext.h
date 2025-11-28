@@ -2939,9 +2939,7 @@ public:
     Ciphertext<Element> EvalChebyshevSeriesPSBatch(ConstCiphertext<Element>& ciphertext,
                                               const std::vector<std::vector<VectorDataType>>& batchOfCoefficients, double a,
                                               double b) const {
-        std::cout << "Provo" << std::endl;
         ValidateCiphertext(ciphertext);
-        std::cout << "Figa" << std::endl;
         return GetScheme()->EvalChebyshevSeriesPSBatch(ciphertext, batchOfCoefficients, a, b);
     }
 
