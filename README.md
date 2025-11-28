@@ -1,5 +1,5 @@
 > [!NOTE]
-> This fork of OpenFHE provides a partially generalized framework for Chebyshev polynomial operations, enabling not only the evaluation of a single polynomial over all slots but also the evaluation of separate polynomials, one for each slot, in parallel.
+> This WIP fork of OpenFHE aimes to provide a partially generalized framework for Chebyshev polynomial operations, enabling not only the evaluation of a single polynomial over all slots but also the evaluation of separate polynomials, one for each slot, in parallel.
 
 
 OpenFHE - Open-Source Fully Homomorphic Encryption Library
