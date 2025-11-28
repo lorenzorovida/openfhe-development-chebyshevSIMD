@@ -1500,10 +1500,10 @@ static inline Ciphertext<DCRTPoly> internalEvalChebyshevSeriesPSBatchWithPrecomp
                 ctxs[i] = T[i];
             }
 
-            for (int j = 0; j < divcsVec.size(); j++) {
+            for (uint32_t j = 0; j < divcsVec.size(); j++) {
                 std::vector<VectorDataType> weights(dc);
                 for (uint32_t i = 0; i < dc; i++) {
-                    weights[i] = divcsVec[i]->q[i + 1];
+                    weights[i] = divcsVec[j]->q[i + 1];
                 }
 
                 batchOfWeights.push_back(weights);
@@ -1514,7 +1514,7 @@ static inline Ciphertext<DCRTPoly> internalEvalChebyshevSeriesPSBatchWithPrecomp
 
         // adds the free term (at x^0)
         std::vector<VectorDataType> freeTerms;
-        for (int i = 0; i < divcsVec.size(); i++) {
+        for (uint32_t i = 0; i < divcsVec.size(); i++) {
             freeTerms.push_back(divcsVec[i]->q.front() / 2.0);
         }
         //TODO
@@ -1578,7 +1578,7 @@ static inline Ciphertext<DCRTPoly> internalEvalChebyshevSeriesPSBatchWithPrecomp
 
         // adds the free term (at x^0)
         std::vector<VectorDataType> freeTerms;
-        for (int i = 0; i < divqrVec.size(); i++) {
+        for (uint32_t i = 0; i < divqrVec.size(); i++) {
             freeTerms.push_back(divqrVec[i]->q.front() / 2.0);
         }
 
@@ -1627,7 +1627,7 @@ static inline Ciphertext<DCRTPoly> internalEvalChebyshevSeriesPSBatchWithPrecomp
 
         // adds the free term (at x^0)
         std::vector<VectorDataType> freeTerms;
-        for (int i = 0; i < s2Vec.size(); i++) {
+        for (uint32_t i = 0; i < s2Vec.size(); i++) {
             freeTerms.push_back(s2Vec[i].front() / 2.0);
         }
         //TODO
@@ -1650,7 +1650,7 @@ static inline Ciphertext<DCRTPoly> internalEvalChebyshevSeriesPSBatchWithPrecomp
     }
     else {
         std::vector<VectorDataType> terms;
-        for (int i = 0; i < divcsVec.size(); i++) {
+        for (uint32_t i = 0; i < divcsVec.size(); i++) {
             terms.push_back(divcsVec[i]->q.front() / 2.0);
         }
 
