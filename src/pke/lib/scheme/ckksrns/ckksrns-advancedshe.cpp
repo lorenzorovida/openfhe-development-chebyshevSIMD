@@ -1410,6 +1410,8 @@ static inline Ciphertext<DCRTPoly> internalEvalChebyshevSeriesPSBatchWithPrecomp
     std::shared_ptr<seriesPowers<DCRTPoly>> ctxtPolys,
     const std::vector<std::vector<VectorDataType>>& batchOfCoefficients) {
 
+    std::cout << "Sono dentrooooo!" << std::endl;
+
     std::vector<std::shared_ptr<longDiv<VectorDataType>>> divcsVec;
     std::vector<std::shared_ptr<longDiv<VectorDataType>>> divqrVec;
     std::vector<std::vector<VectorDataType>> s2Vec;
