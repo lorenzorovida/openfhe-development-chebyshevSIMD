@@ -1,7 +1,7 @@
 > [!NOTE]
 > This WIP fork of OpenFHE aimes to provide a partially generalized framework for Chebyshev polynomial operations, enabling not only the evaluation of a single polynomial over all slots but also the evaluation of separate polynomials, one for each slot, in parallel.
 > 
-> The added (public) function is `EvalChebyshevSeriesPSBatch(c, {coeffs1, coeffs2, ...}, -a, b)`, available in the cryptocontext generated with CKKS. It is possible to run a quick test using the source code in `batched_chebyshev_example.cpp`, you can also check its output in `batched_chebyshev_example-output.tx`. NOTE: **this is a work in progress and errors might occur**.
+> The added (public) function is `EvalChebyshevSeriesPSBatch(c, {coeffs1, coeffs2, ...}, -a, b)`, available in the cryptocontext generated with CKKS. It is possible to run a quick test using the source code in `batched_chebyshev_example.cpp`, you can also check its output in `batched_chebyshev_example-output.txt`. NOTE: **this is a work in progress and errors might occur**.
 
 
 
