@@ -188,24 +188,29 @@ static inline Ciphertext<DCRTPoly> internalEvalLinearWSumMutableBatch(
         }
     }
 
-    std::vector<Plaintext> constantsPtxt(setOfConstants[0].size());
+    std::vector<Plaintext> constantsPtxt(setOfConstants.size());
+
     for (uint32_t i = 0; i < constantsPtxt.size(); i++) {
 
         /*
          * Type check for CKKS encoding
          */
-        std::vector<std::complex<double>> tmp;
-        tmp.reserve(setOfConstants.size());
 
-        for (auto& x : setOfConstants[i])
+        std::vector<std::complex<double>> tmp;
+        tmp.reserve(setOfConstants[i].size());
+
+        for (auto& x : setOfConstants[i]) {
             if constexpr (std::is_same_v<VectorDataType, std::complex<double>>) {
                 tmp.emplace_back(x);
-            } else {
+            }
+            else {
                 tmp.emplace_back(static_cast<double>(x), 0.0);
             }
+        }
 
         constantsPtxt[i] = cc->MakeCKKSPackedPlaintext(tmp, 1, ciphertexts[0]->GetLevel(),
-                                                       nullptr, setOfConstants[i].size());
+                                                       nullptr, tmp.size());
+
     }
 
     Ciphertext<DCRTPoly> weightedSum = cc->EvalMult(ciphertexts[0], constantsPtxt[0]);
@@ -1115,6 +1120,257 @@ static Ciphertext<DCRTPoly> InnerEvalChebyshevPS(ConstCiphertext<DCRTPoly>& x,
 }
 
 template <typename VectorDataType>
+static Ciphertext<DCRTPoly> InnerEvalChebyshevPSBatch(ConstCiphertext<DCRTPoly>& x,
+                                                 const std::vector<std::vector<VectorDataType>>& batchOfCoefficients,
+                                                 uint32_t k, uint32_t m, std::vector<Ciphertext<DCRTPoly>>& T,
+                                                 std::vector<Ciphertext<DCRTPoly>>& T2) {
+
+    std::vector<std::vector<double>> batchOfCoefficientsDouble;
+    batchOfCoefficientsDouble.reserve(batchOfCoefficients.size());
+
+    // This is required as throughout the function we will create CKKS plaintexts,
+    // but the encoding function requires doubles (and not complex values, accepted by
+    // VectorDataType)
+    if constexpr (std::is_same_v<VectorDataType, double>) {
+        for (const auto& innerVec : batchOfCoefficients) {
+            std::vector<double> converted;
+            converted.reserve(innerVec.size());
+
+            for (const auto& value : innerVec) {
+                converted.push_back(static_cast<double>(value));
+            }
+            batchOfCoefficientsDouble.push_back(std::move(converted));
+        }
+    } else {
+        std::cerr << "Not implemented for type: " << typeid(VectorDataType).name() << std::endl;
+    }
+
+    std::vector<std::shared_ptr<longDiv<double>>> divcsVec;
+    std::vector<std::shared_ptr<longDiv<double>>> divqrVec;
+    std::vector<std::vector<double>> s2Vec;
+
+    auto cc = x->GetCryptoContext();
+    uint32_t compositeDegree =
+        std::dynamic_pointer_cast<CryptoParametersCKKSRNS>(x->GetCryptoParameters())->GetCompositeDegree();
+
+    for (int i = 0; i < batchOfCoefficientsDouble.size(); i++) {
+        // Compute k*2^{m-1}-k because we use it a lot
+        uint32_t k2m2k = k * (1 << (m - 1)) - k;
+
+        // Divide coefficients by T^{k*2^{m-1}}
+        std::vector<VectorDataType> Tkm(static_cast<int32_t>(k2m2k + k) + 1);
+        Tkm.back() = 1;
+        auto divqr = LongDivisionChebyshev(batchOfCoefficientsDouble[i], Tkm);
+
+        // Subtract x^{k(2^{m-1} - 1)} from r
+        auto r2 = divqr->r;
+        if (static_cast<int32_t>(k2m2k - Degree(divqr->r)) <= 0) {
+            r2[static_cast<int32_t>(k2m2k)] -= 1;
+            r2.resize(Degree(r2) + 1);
+        }
+        else {
+            r2.resize(static_cast<int32_t>(k2m2k + 1));
+            r2.back() = -1;
+        }
+
+        // Divide r2 by q
+        auto divcs = LongDivisionChebyshev(r2, divqr->q);
+
+        // Add x^{k(2^{m-1} - 1)} to s
+        auto s2 = divcs->r;
+        s2.resize(static_cast<int32_t>(k2m2k + 1), 0.0);
+        s2.back() = 1;
+
+        divqrVec.push_back(divqr);
+        divcsVec.push_back(divcs);
+        s2Vec.push_back(s2);
+    }
+
+    // Evaluate c at u
+    Ciphertext<DCRTPoly> cu;
+    uint32_t dc = Degree(divcsVec[0]->q);
+    bool flag_c = false;
+    if (dc >= 1) {
+        if (dc == 1) {
+            //if (IsNotEqualOne(divcs->q[1])) {
+            // NOTE: We can not optimize anymore since it is not a constant, so we always perform the product
+
+            std::vector<double> coeffs;
+            for (uint32_t i = 0; i < divcsVec.size(); i++) coeffs.push_back(divcsVec[i]->q[1]);
+
+            cu = cc->EvalMult(T.front(), cc->MakeCKKSPackedPlaintext(coeffs, 1, T.front()->GetLevel(),
+                                                                     nullptr, coeffs.size()));
+            cc->ModReduceInPlace(cu);
+        }
+        else {
+            std::vector<std::vector<double>> batchOfWeights;
+            std::vector<Ciphertext<DCRTPoly>> ctxs(dc);
+
+            for (uint32_t i = 0; i < dc; i++) {
+                ctxs[i] = T[i];
+            }
+
+            for (uint32_t j = 0; j < divcsVec.size(); j++) {
+                std::vector<double> weights(dc);
+                for (uint32_t i = 0; i < dc; i++) {
+                    weights[i] = divcsVec[j]->q[i + 1];
+                }
+
+                batchOfWeights.push_back(weights);
+            }
+
+            cu = internalEvalLinearWSumMutableBatch(ctxs, batchOfWeights);
+
+        }
+
+        // adds the free term (at x^0)
+        std::vector<double> freeTerms;
+        for (uint32_t i = 0; i < divcsVec.size(); i++) {
+            freeTerms.push_back(divcsVec[i]->q.front() / 2.0);
+        }
+
+        Plaintext freeTermsPtxt = cc->MakeCKKSPackedPlaintext(freeTerms, 1, cu->GetLevel(),
+                                                              nullptr, freeTerms.size());
+        cu = cc->EvalAdd(cu, freeTermsPtxt);
+        // Need to reduce levels up to the level of T2[m-1].
+        uint32_t levelDiff = T2[m - 1]->GetLevel() - cu->GetLevel();
+        cc->LevelReduceInPlace(cu, nullptr, levelDiff / compositeDegree);
+
+        flag_c = true;
+    }
+
+    // Evaluate q and s2 at u. If their degrees are larger than k, then recursively apply the Paterson-Stockmeyer algorithm.
+    Ciphertext<DCRTPoly> qu;
+
+    if (Degree(divqrVec[0]->q) > k) {
+        std::vector<std::vector<double>> coeffs;
+        for (int i = 0; i < divqrVec.size(); i++) {
+            coeffs.push_back(divqrVec[i]->q);
+        }
+
+        qu = InnerEvalChebyshevPSBatch(x, coeffs, k, m - 1, T, T2);
+    }
+    else {
+        // dq = k from construction
+        // perform scalar multiplication for all other terms and sum them up if there are non-zero coefficients
+        auto qcopy = divqrVec[0]->q;
+        qcopy.resize(k);
+        if (Degree(qcopy) > 0) {
+            std::vector<Ciphertext<DCRTPoly>> ctxs(Degree(qcopy));
+            std::vector<std::vector<double>> weights(Degree(qcopy));
+
+            for (uint32_t i = 0; i < Degree(qcopy); ++i) {
+                ctxs[i] = T[i];
+                std::vector<double> weightsForLevel;
+                for (uint32_t j = 0; j < divqrVec.size(); j++) {
+                    weightsForLevel.push_back(divqrVec[j]->q[i+1]);
+                }
+                weights[i] = weightsForLevel;
+            }
+
+            qu = cc->EvalLinearWSumMutableBatch(ctxs, weights);
+
+            // the highest order coefficient will always be a power of two up to 2^{m-1} because q is "monic" but the Chebyshev rule adds a factor of 2
+            // we don't need to increase the depth by multiplying the highest order coefficient, but instead checking and summing, since we work with m <= 4.
+            Ciphertext<DCRTPoly> sum = T[k - 1]->Clone();
+            uint32_t limit           = log2(ToReal(divqrVec[0]->q.back()));
+            for (uint32_t i = 0; i < limit; ++i) {
+                sum = cc->EvalAdd(sum, sum);
+            }
+            cc->EvalAddInPlace(qu, sum);
+        }
+        else {
+            Ciphertext<DCRTPoly> sum = T[k - 1]->Clone();
+            uint32_t limit           = log2(ToReal(divqrVec[0]->q.back()));
+            for (uint32_t i = 0; i < limit; ++i) {
+                sum = cc->EvalAdd(sum, sum);
+            }
+            qu = sum;
+        }
+
+        // adds the free term (at x^0)
+        std::vector<double> freeTerms;
+        for (uint32_t i = 0; i < divqrVec.size(); i++) {
+            freeTerms.push_back(divqrVec[i]->q.front() / 2.0);
+        }
+
+        Plaintext ptxt = cc->MakeCKKSPackedPlaintext(freeTerms, 1, qu->GetLevel(),
+                                                     nullptr, qu->GetSlots());
+        qu = cc->EvalAdd(qu, ptxt);
+        // The number of levels of qu is the same as the number of levels of T[k-1] or T[k-1] + 1.
+        // No need to reduce it to T2[m-1] because it only reaches here when m = 2.
+    }
+
+    Ciphertext<DCRTPoly> su;
+
+    if (Degree(s2Vec[0]) > k) {
+        su = InnerEvalChebyshevPSBatch(x, s2Vec, k, m - 1, T, T2);
+    }
+    else {
+        // ds = k from construction
+        // perform scalar multiplication for all other terms and sum them up if there are non-zero coefficients
+        auto scopy = s2Vec[0];
+        scopy.resize(k);
+        if (Degree(scopy) > 0) {
+            std::vector<Ciphertext<DCRTPoly>> ctxs(Degree(scopy));
+            std::vector<std::vector<double>> weights(Degree(scopy));
+
+            for (uint32_t i = 0; i < Degree(scopy); ++i) {
+                ctxs[i]    = T[i];
+                std::vector<double> weightsForLevel;
+                for (uint32_t j = 0; j < s2Vec.size(); j++) {
+                    weightsForLevel.push_back(s2Vec[j][i + 1]);
+                }
+                weights[i] = weightsForLevel;
+            }
+
+            su = cc->EvalLinearWSumMutableBatch(ctxs, weights);
+
+            // the highest order coefficient will always be 1 because s2 is monic.
+            cc->EvalAddInPlace(su, T[k - 1]);
+        }
+        else {
+            su = T[k - 1]->Clone();
+        }
+
+        // adds the free term (at x^0)
+        std::vector<double> freeTerms;
+        for (uint32_t i = 0; i < s2Vec.size(); i++) {
+            freeTerms.push_back(s2Vec[i].front() / 2.0);
+        }
+
+        Plaintext ptxt = cc->MakeCKKSPackedPlaintext(freeTerms, 1, su->GetLevel(), nullptr, su->GetSlots());
+        cc->EvalAddInPlace(su, ptxt);
+
+        // The number of levels of su is the same as the number of levels of T[k-1] or T[k-1] + 1. Need to reduce it to T2[m-1] + 1.
+        // su = cc->LevelReduce(su, nullptr, su->GetElements()[0].GetNumOfElements() - Lm + 1) ;
+        cc->LevelReduceInPlace(su, nullptr);
+    }
+
+    Ciphertext<DCRTPoly> result;
+
+    if (flag_c) {
+        result = cc->EvalAdd(T2[m - 1], cu);
+    }
+    else {
+        std::vector<double> terms;
+        for (uint32_t i = 0; i < divcsVec.size(); i++) {
+            terms.push_back(divcsVec[i]->q.front() / 2.0);
+        }
+
+        Plaintext ptxt = cc->MakeCKKSPackedPlaintext(terms, 1, T2[m - 1]->GetLevel(), nullptr, T2[m - 1]->GetSlots());
+        result = cc->EvalAdd(T2[m - 1], ptxt);
+    }
+
+    result = cc->EvalMult(result, qu);
+    cc->ModReduceInPlace(result);
+
+    cc->EvalAddInPlace(result, su);
+
+    return result;
+}
+
+template <typename VectorDataType>
 std::shared_ptr<seriesPowers<DCRTPoly>> internalEvalChebyPolysPS(ConstCiphertext<DCRTPoly>& x,
                                                                  const std::vector<VectorDataType>& coefficients,
                                                                  double a, double b) {
@@ -1410,11 +1666,29 @@ static inline Ciphertext<DCRTPoly> internalEvalChebyshevSeriesPSBatchWithPrecomp
     std::shared_ptr<seriesPowers<DCRTPoly>> ctxtPolys,
     const std::vector<std::vector<VectorDataType>>& batchOfCoefficients) {
 
-    std::cout << "Sono dentrooooo!" << std::endl;
+    std::vector<std::vector<double>> batchOfCoefficientsDouble;
+    batchOfCoefficientsDouble.reserve(batchOfCoefficients.size());
 
-    std::vector<std::shared_ptr<longDiv<VectorDataType>>> divcsVec;
-    std::vector<std::shared_ptr<longDiv<VectorDataType>>> divqrVec;
-    std::vector<std::vector<VectorDataType>> s2Vec;
+    // This is required as throughout the function we will create CKKS plaintexts,
+    // but the encoding function requires doubles (and not complex values, accepted by
+    // VectorDataType)
+    if constexpr (std::is_same_v<VectorDataType, double>) {
+        for (const auto& innerVec : batchOfCoefficients) {
+            std::vector<double> converted;
+            converted.reserve(innerVec.size());
+
+            for (const auto& value : innerVec) {
+                converted.push_back(static_cast<double>(value));
+            }
+            batchOfCoefficientsDouble.push_back(std::move(converted));
+        }
+    } else {
+        std::cerr << "Not implemented for type: " << typeid(VectorDataType).name() << std::endl;
+    }
+
+    std::vector<std::shared_ptr<longDiv<double>>> divcsVec;
+    std::vector<std::shared_ptr<longDiv<double>>> divqrVec;
+    std::vector<std::vector<double>> s2Vec;
 
     /*
      * Check on the batch of coefficients: they must all be of the same size
@@ -1432,11 +1706,14 @@ static inline Ciphertext<DCRTPoly> internalEvalChebyshevSeriesPSBatchWithPrecomp
     auto k     = ctxtPolys->k;
     auto m     = ctxtPolys->m;
 
+    std::cout << "k: " << k << std::endl;
+    std::cout << "m: " << m << std::endl;
+
     // Compute k*2^{m-1}-k because we use it a lot
     uint32_t k2m2k = k * (1 << (m - 1)) - k;
 
-    for (uint32_t b = 0; b < batchOfCoefficients.size(); b++) {
-        auto f2 = batchOfCoefficients[b];
+    for (uint32_t b = 0; b < batchOfCoefficientsDouble.size(); b++) {
+        auto f2 = batchOfCoefficientsDouble[b];
         auto n  = Degree(f2);
         f2.resize(n + 1);
 
@@ -1445,7 +1722,7 @@ static inline Ciphertext<DCRTPoly> internalEvalChebyshevSeriesPSBatchWithPrecomp
         f2.back() = 1;
 
         // Divide f2 by T^{k*2^{m-1}}
-        std::vector<VectorDataType> Tkm(k2m2k + k + 1);
+        std::vector<double> Tkm(k2m2k + k + 1);
         Tkm.back() = 1;
 
         auto divqr = LongDivisionChebyshev(f2, Tkm);
@@ -1486,16 +1763,15 @@ static inline Ciphertext<DCRTPoly> internalEvalChebyshevSeriesPSBatchWithPrecomp
         if (dc == 1) {
             // if (IsNotEqualOne(divcs->q[1])) {
             // NOTE: We can not optimize anymore since it is not a constant, so we always perform the product
-            std::vector<VectorDataType> coeffs;
+            std::vector<double> coeffs;
             for (uint32_t i = 0; i < divcsVec.size(); i++) coeffs.push_back(divcsVec[i]->q[1]);
 
-            //TODO
-            //cu = cc->EvalMult(T.front(), cc->MakeCKKSPackedPlaintext(coeffs, 1, T.front()->GetLevel(),
-                                                                     //nullptr, T.front()->GetSlots()));
+            cu = cc->EvalMult(T.front(), cc->MakeCKKSPackedPlaintext(coeffs, 1, T.front()->GetLevel(),
+                                                                     nullptr, coeffs.size()));
             cc->ModReduceInPlace(cu);
         }
         else {
-            std::vector<std::vector<VectorDataType>> batchOfWeights;
+            std::vector<std::vector<double>> batchOfWeights;
             std::vector<Ciphertext<DCRTPoly>> ctxs(dc);
 
             for (uint32_t i = 0; i < dc; i++) {
@@ -1503,7 +1779,7 @@ static inline Ciphertext<DCRTPoly> internalEvalChebyshevSeriesPSBatchWithPrecomp
             }
 
             for (uint32_t j = 0; j < divcsVec.size(); j++) {
-                std::vector<VectorDataType> weights(dc);
+                std::vector<double> weights(dc);
                 for (uint32_t i = 0; i < dc; i++) {
                     weights[i] = divcsVec[j]->q[i + 1];
                 }
@@ -1515,14 +1791,14 @@ static inline Ciphertext<DCRTPoly> internalEvalChebyshevSeriesPSBatchWithPrecomp
         }
 
         // adds the free term (at x^0)
-        std::vector<VectorDataType> freeTerms;
+        std::vector<double> freeTerms;
         for (uint32_t i = 0; i < divcsVec.size(); i++) {
             freeTerms.push_back(divcsVec[i]->q.front() / 2.0);
         }
-        //TODO
-        //Plaintext freeTermsPtxt = cc->MakeCKKSPackedPlaintext(freeTerms, 1, cu->GetLevel(),
-                                                                       //nullptr, cu->GetSlots());
-        //cu = cc->EvalAdd(cu, freeTermsPtxt);
+
+        Plaintext freeTermsPtxt = cc->MakeCKKSPackedPlaintext(freeTerms, 1, cu->GetLevel(),
+                                                                       nullptr, freeTerms.size());
+        cu = cc->EvalAdd(cu, freeTermsPtxt);
 
         // TODO : Andrey why not T2[m-1]->GetLevel() instead?
         // Need to reduce levels to the level of T2[m-1].
@@ -1537,27 +1813,33 @@ static inline Ciphertext<DCRTPoly> internalEvalChebyshevSeriesPSBatchWithPrecomp
 
     // Again, degrees should all be the same for the different divqrVec
     if (Degree(divqrVec[0]->q) > k) {
-        std::cerr << "TO BE IMPLEMENTED" << std::endl;
-        //qu = InnerEvalChebyshevPS(T[0], divqr->q, k, m - 1, T, T2);
+        std::vector<std::vector<double>> coeffs;
+        for (int i = 0; i < divqrVec.size(); i++) {
+            coeffs.push_back(divqrVec[i]->q);
+        }
+        qu = InnerEvalChebyshevPSBatch(T[0], coeffs, k, m - 1, T, T2);
     }
     else {
         // dq = k from construction
         // perform scalar multiplication for all other terms and sum them up if there are non-zero coefficients
         auto qcopy = divqrVec[0]->q;
         qcopy.resize(k);
+
         if (Degree(qcopy) > 0) {
             std::vector<Ciphertext<DCRTPoly>> ctxs(Degree(qcopy));
-            std::vector<std::vector<VectorDataType>> weights(Degree(qcopy));
+            std::vector<std::vector<double>> weights(Degree(qcopy));
 
             for (uint32_t i = 0; i < Degree(qcopy); ++i) {
                 ctxs[i] = T[i];
-                std::vector<VectorDataType> weightsForLevel;
+                std::vector<double> weightsForLevel;
                 for (uint32_t j = 0; j < divqrVec.size(); j++) {
                     weightsForLevel.push_back(divqrVec[j]->q[i+1]);
                 }
                 weights[i] = weightsForLevel;
             }
-            qu = cc->EvalAdd(qu, internalEvalLinearWSumMutableBatch(ctxs, weights));
+
+            qu = internalEvalLinearWSumMutableBatch(ctxs, weights);
+
             // the highest order coefficient will always be a power of two up to 2^{m-1} because q is "monic" but the Chebyshev rule adds a factor of 2
             // we don't need to increase the depth by multiplying the highest order coefficient, but instead checking and summing, since we work with m <= 4.
             Ciphertext<DCRTPoly> sum = T[k - 1]->Clone();
@@ -1575,19 +1857,18 @@ static inline Ciphertext<DCRTPoly> internalEvalChebyshevSeriesPSBatchWithPrecomp
                 sum = cc->EvalAdd(sum, sum);
             }
 
-            qu = cc->EvalAdd(qu, sum);
+            qu = sum;
         }
 
         // adds the free term (at x^0)
-        std::vector<VectorDataType> freeTerms;
+        std::vector<double> freeTerms;
         for (uint32_t i = 0; i < divqrVec.size(); i++) {
             freeTerms.push_back(divqrVec[i]->q.front() / 2.0);
         }
 
-        //TODO
-        //Plaintext freeTermsPtxt = cc->MakeCKKSPackedPlaintext(freeTerms, 1, qu->GetLevel(),
-                                                              //nullptr, qu->GetSlots());
-        //qu = cc->EvalAdd(qu, freeTermsPtxt);
+        Plaintext ptxt = cc->MakeCKKSPackedPlaintext(freeTerms, 1, qu->GetLevel(),
+                                                     nullptr, qu->GetSlots());
+        qu = cc->EvalAdd(qu, ptxt);
         // The number of levels of qu is the same as the number of levels of T[k-1] + 1.
         // Will only get here when m = 2, so the number of levels of qu and T2[m-1] will be the same.
     }
@@ -1595,8 +1876,7 @@ static inline Ciphertext<DCRTPoly> internalEvalChebyshevSeriesPSBatchWithPrecomp
     Ciphertext<DCRTPoly> su;
 
     if (Degree(s2Vec[0]) > k) {
-        std::cerr << "TO BE IMPLEMENTED" << std::endl;
-        //su = InnerEvalChebyshevPS(T[0], s2, k, m - 1, T, T2);
+        su = InnerEvalChebyshevPSBatch(T[0], s2Vec, k, m - 1, T, T2);
     }
     else {
         // ds = k from construction
@@ -1605,21 +1885,19 @@ static inline Ciphertext<DCRTPoly> internalEvalChebyshevSeriesPSBatchWithPrecomp
         scopy.resize(k);
         if (Degree(scopy) > 0) {
             std::vector<Ciphertext<DCRTPoly>> ctxs(Degree(scopy));
-            std::vector<std::vector<VectorDataType>> weights(Degree(scopy));
+            std::vector<std::vector<double>> weights(Degree(scopy));
 
             for (uint32_t i = 0; i < Degree(scopy); ++i) {
                 ctxs[i]    = T[i];
-                std::vector<VectorDataType> weightsForLevel;
+                std::vector<double> weightsForLevel;
                 for (uint32_t j = 0; j < s2Vec.size(); j++) {
                     weightsForLevel.push_back(s2Vec[j][i + 1]);
                 }
                 weights[i] = weightsForLevel;
             }
 
-            std::cout << "MA CHE CAZZ" << weights;
+            su = cc->EvalLinearWSumMutableBatch(ctxs, weights);
 
-            //TODO
-            //su = cc->EvalLinearWSumMutable(ctxs, weights);
             // the highest order coefficient will always be 1 because s2 is monic.
             cc->EvalAddInPlace(su, T[k - 1]);
         }
@@ -1628,14 +1906,13 @@ static inline Ciphertext<DCRTPoly> internalEvalChebyshevSeriesPSBatchWithPrecomp
         }
 
         // adds the free term (at x^0)
-        std::vector<VectorDataType> freeTerms;
+        std::vector<double> freeTerms;
         for (uint32_t i = 0; i < s2Vec.size(); i++) {
             freeTerms.push_back(s2Vec[i].front() / 2.0);
         }
-        //TODO
-        //Plaintext freeTermsPtxt = cc->MakeCKKSPackedPlaintext(freeTerms, 1, su->GetLevel(),
-                                                              //nullptr, su->GetSlots());
-        //cc->EvalAddInPlace(su, freeTermsPtxt);
+
+        Plaintext ptxt = cc->MakeCKKSPackedPlaintext(freeTerms, 1, su->GetLevel(), nullptr, su->GetSlots());
+        cc->EvalAddInPlace(su, ptxt);
 
         // The number of levels of su is the same as the number of levels of T[k-1] + 1.
         // Will only get here when m = 2, so need to reduce the number of levels by 1.
@@ -1651,15 +1928,13 @@ static inline Ciphertext<DCRTPoly> internalEvalChebyshevSeriesPSBatchWithPrecomp
         result = cc->EvalAdd(T2[m - 1], cu);
     }
     else {
-        std::vector<VectorDataType> terms;
+        std::vector<double> terms;
         for (uint32_t i = 0; i < divcsVec.size(); i++) {
             terms.push_back(divcsVec[i]->q.front() / 2.0);
         }
 
-        //TODO
-        //Plaintext termsPtxt = cc->MakeCKKSPackedPlaintext(terms, 1, T2[m - 1]->GetLevel(),
-                                                              //nullptr, T2[m - 1]->GetSlots());
-        //result = cc->EvalAdd(T2[m - 1], termsPtxt);
+        Plaintext ptxt = cc->MakeCKKSPackedPlaintext(terms, 1, T2[m - 1]->GetLevel(), nullptr, T2[m - 1]->GetSlots());
+        result = cc->EvalAdd(T2[m - 1], ptxt);
     }
 
     result = cc->EvalMult(result, qu);
@@ -1760,16 +2035,28 @@ Ciphertext<DCRTPoly> AdvancedSHECKKSRNS::EvalChebyshevSeriesPS(ConstCiphertext<D
 Ciphertext<DCRTPoly> AdvancedSHECKKSRNS::EvalChebyshevSeriesPSBatch(ConstCiphertext<DCRTPoly>& x,
                                                                const std::vector<std::vector<int64_t>>& batchOfCoefficients,
                                                                double a, double b) const {
+    if (batchOfCoefficients.size() != x->GetSlots())
+        std::cerr << "The set of coefficients must be as large as the number of slots of the input ciphertext"
+                  << std::endl;
+
     return internalEvalChebyshevSeriesPSBatchWithPrecomp(internalEvalChebyPolysPS(x, batchOfCoefficients[0], a, b), batchOfCoefficients);
 }
 Ciphertext<DCRTPoly> AdvancedSHECKKSRNS::EvalChebyshevSeriesPSBatch(ConstCiphertext<DCRTPoly>& x,
                                                                       const std::vector<std::vector<double>>& batchOfCoefficients,
                                                                       double a, double b) const {
+    if (batchOfCoefficients.size() != x->GetSlots())
+        std::cerr << "The set of coefficients must be as large as the number of slots of the input ciphertext"
+                  << std::endl;
+
     return internalEvalChebyshevSeriesPSBatchWithPrecomp(internalEvalChebyPolysPS(x, batchOfCoefficients[0], a, b), batchOfCoefficients);
 }
 Ciphertext<DCRTPoly> AdvancedSHECKKSRNS::EvalChebyshevSeriesPSBatch(
     ConstCiphertext<DCRTPoly>& x, const std::vector<std::vector<std::complex<double>>>& batchOfCoefficients, double a, double b)
     const {
+    if (batchOfCoefficients.size() != x->GetSlots())
+        std::cerr << "The set of coefficients must be as large as the number of slots of the input ciphertext"
+                  << std::endl;
+
     return internalEvalChebyshevSeriesPSBatchWithPrecomp(internalEvalChebyPolysPS(x, batchOfCoefficients[0], a, b), batchOfCoefficients);
 }
 
