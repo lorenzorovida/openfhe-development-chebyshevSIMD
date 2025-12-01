@@ -65,7 +65,7 @@ int main(int argc, char *argv[]) {
     context->Decrypt(cres, key_pair.secretKey, &res);
     cout << res << endl;
 
-    cout << "Now parallelizing the two polynomials in two slots" << endl;
+    cout << "Now parallelizing the two polynomials in two slots, the first refers to x = 0.1 and coeffs1, the second to x = 0.2 and coeffs2" << endl;
 
     cres = context->EvalChebyshevSeriesPSBatch(c, {coeffs1, coeffs2}, -1, 1);
     context->Decrypt(cres, key_pair.secretKey, &res);
@@ -74,6 +74,9 @@ int main(int argc, char *argv[]) {
     /*
      * TEST WITH MANY COEFFS
      */
+
+    cout << endl << "******" << endl << endl;
+    
     coeffs1 = {3.4, 1.2, 0.8, 1.3, 0.0, 2.3, 1.1, 0.6, 0.3, 0.6, 3.0, 2.1, 0.3, 2.7, 2.9, 1.7, 2.2, 0.5, 0.5, 0.6, 1.6, 0.8, 0.6, 0.8, 1.8, 1.4, 1.6, 1.7, 2.5, 2.2, 0.2, 1.6, 1.9, 1.2, 1.9, 0.1, 1.0, 0.1, 1.4, 2.5, 2.9, 2.9, 2.7, 0.2, 0.0, 0.2, 2.0, 0.8, 1.3, 2.0};
     cout << "Test with 50 coefficients " << coeffs1 << " over x = 0.1, 0.2" << endl;
 
@@ -89,7 +92,7 @@ int main(int argc, char *argv[]) {
     context->Decrypt(cres, key_pair.secretKey, &res);
     cout << res << endl;
 
-    cout << "Now parallelizing the two polynomials in two slots" << endl;
+    cout << "Now parallelizing the two polynomials in two slots, the first refers to x = 0.1 and coeffs1, the second to x = 0.2 and coeffs2" << endl;
 
     cres = context->EvalChebyshevSeriesPSBatch(c, {coeffs1, coeffs2}, -1, 1);
     context->Decrypt(cres, key_pair.secretKey, &res);
