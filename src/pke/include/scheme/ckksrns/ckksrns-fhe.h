@@ -237,13 +237,15 @@ public:
                                                                             const std::vector<std::complex<double>>& A,
                                                                             const std::vector<uint32_t>& rotGroup,
                                                                             bool flag_i, double scale = 1,
-                                                                            uint32_t L = 0) const;
+                                                                            uint32_t L          = 0,
+                                                                            bool flagStCComplex = false) const;
 
     std::vector<std::vector<ReadOnlyPlaintext>> EvalSlotsToCoeffsPrecompute(const CryptoContextImpl<DCRTPoly>& cc,
                                                                             const std::vector<std::complex<double>>& A,
                                                                             const std::vector<uint32_t>& rotGroup,
                                                                             bool flag_i, double scale = 1,
-                                                                            uint32_t L = 0) const;
+                                                                            uint32_t L          = 0,
+                                                                            bool flagStCComplex = false) const;
 
     //------------------------------------------------------------------------------
     // EVALUATION: CoeffsToSlots and SlotsToCoeffs

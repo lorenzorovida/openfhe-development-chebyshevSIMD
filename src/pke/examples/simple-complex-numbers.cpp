@@ -48,7 +48,7 @@ void SimpleBootstrappingStCFirstComplex();
 
 int main() {
     // SimpleComplexNumbers();
-    // SimpleBootstrappingComplex();
+    SimpleBootstrappingComplex();
     SimpleBootstrappingStCFirstComplex();
     return 0;
 }
@@ -397,7 +397,7 @@ void SimpleBootstrappingComplex() {
    * bootstrapping up to N/2 real numbers in the StC variant of bootstrapping requires evaluating the modular
    * approximation polynomial on a single ciphertext.
    */
-    usint numSlots = ringDim / 4;
+    usint numSlots = ringDim / 2;
     // parameters.SetBatchSize(numSlots);
 
     /*  A6) Multiplicative depth.
@@ -528,7 +528,7 @@ void SimpleBootstrappingStCFirstComplex() {
    * bootstrapping up to N/2 real numbers in the StC variant of bootstrapping requires evaluating the modular
    * approximation polynomial on a single ciphertext.
    */
-    usint numSlots = ringDim / 8;
+    usint numSlots = ringDim / 2;
     // parameters.SetBatchSize(numSlots);
 
     /*  A6) Multiplicative depth.
@@ -565,14 +565,14 @@ void SimpleBootstrappingStCFirstComplex() {
     cryptoContext->EvalMultKeyGen(keyPair.secretKey);
     cryptoContext->EvalBootstrapKeyGen(keyPair.secretKey, numSlots);
 
-    std::vector<std::complex<double>> x = {0.25 + 1.25i, 0.5 - 1.5i, 0.75 + 1.75i, 1.0 - 0.i,
-                                           2.0 + 2.i,    3.0 - 3.5i, 4.0 + 4.8i,   5.0 - 5.9i};
+    std::vector<std::complex<double>> x = {0.25 + 0.25i, 0.5 - 0.5i, 0.75 + 0.75i, 1.0 - 1.i,
+                                           2.0 + 2.i,    3.0 - 3.i,  4.0 + 4.i,    5.0 - 5.i};
     if (x.size() < numSlots)
         x = Fill<std::complex<double>>(x, numSlots);
     size_t encodedLength = x.size();
 
     // We start with a depleted ciphertext that has used up all of its levels.
-    Plaintext ptxt = cryptoContext->MakeCKKSPackedPlaintext(x, 1, depth - 2 - levelBudget[1], nullptr, numSlots);
+    Plaintext ptxt = cryptoContext->MakeCKKSPackedPlaintext(x, 1, depth - 1 - levelBudget[1], nullptr, numSlots);
 
     ptxt->SetLength(encodedLength);
     std::cout << "Input: " << ptxt << std::endl;

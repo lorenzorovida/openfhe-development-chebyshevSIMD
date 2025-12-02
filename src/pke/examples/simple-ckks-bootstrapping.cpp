@@ -166,10 +166,6 @@ void SimpleBootstrapExample(usint dcrtBits, usint ringDim, usint numSlots, Scali
     std::cerr << "Number of levels consumed by initial ciphertext: " << ciph->GetLevel()
               << ", and noise scale degree: " << ciph->GetNoiseScaleDeg() << std::endl;
 
-    // ciph = cryptoContext->EvalMult(ciph, ciph);
-    // std::cerr << "Number of levels consumed by ciphertext after multiplication: " << ciph->GetLevel()
-    //           << ", and noise scale degree: " << ciph->GetNoiseScaleDeg() << std::endl;
-
     // auto start = std::chrono::high_resolution_clock::now();
 
     // Perform the bootstrapping operation. The goal is to increase the number of levels remaining
