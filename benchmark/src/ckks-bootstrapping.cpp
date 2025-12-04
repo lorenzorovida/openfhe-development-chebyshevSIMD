@@ -123,6 +123,48 @@ struct boot_config {
     cc->ClearStaticMapsAndVectors();
 }
 
+[[maybe_unused]] static void CKKSBootStC(benchmark::State& state) {
+    auto t = boot_configs[state.range(0)];
+
+    CCParams<CryptoContextCKKSRNS> parameters;
+    parameters.SetSecurityLevel(HEStd_128_classic);
+    parameters.SetRingDim(t.ringDim);
+    parameters.SetScalingModSize(t.dcrtBits);
+    parameters.SetFirstModSize(t.firstMod);
+    parameters.SetNumLargeDigits(t.numDigits);
+    parameters.SetSecretKeyDist(t.skdst);
+    parameters.SetScalingTechnique(t.stech);
+    parameters.SetKeySwitchTechnique(HYBRID);
+    uint32_t depth = t.lvlsAfter + FHECKKSRNS::GetBootstrapDepth(t.lvlb, t.skdst) + (t.iters - 1);
+    parameters.SetMultiplicativeDepth(depth);
+
+    auto cc = GenCryptoContext(parameters);
+    cc->Enable(PKE);
+    cc->Enable(KEYSWITCH);
+    cc->Enable(LEVELEDSHE);
+    cc->Enable(ADVANCEDSHE);
+    cc->Enable(FHE);
+
+    cc->EvalBootstrapSetup(t.lvlb, {0, 0}, t.slots, 0, true, true);
+
+    auto keyPair = cc->KeyGen();
+    cc->EvalMultKeyGen(keyPair.secretKey);
+    cc->EvalBootstrapKeyGen(keyPair.secretKey, t.slots);
+
+    std::vector<double> x = {0.25, 0.5, 0.75, 1.0, 2.0, 3.0, 4.0, 5.0};
+
+    auto ptxt = cc->MakeCKKSPackedPlaintext(x, 1, depth - 1 - t.lvlb[1], nullptr, t.slots);
+    ptxt->SetLength(t.slots);
+
+    auto ctxt = cc->Encrypt(keyPair.publicKey, ptxt);
+
+    while (state.KeepRunning())
+        auto ctxtAfter = cc->EvalBootstrap(ctxt, t.iters);
+
+    cc->ClearStaticMapsAndVectors();
+}
+
 BENCHMARK(CKKSBoot)->Unit(benchmark::kSecond)->Iterations(4)->Apply(BootConfigs);
+BENCHMARK(CKKSBootStC)->Unit(benchmark::kSecond)->Iterations(4)->Apply(BootConfigs);
 
 BENCHMARK_MAIN();

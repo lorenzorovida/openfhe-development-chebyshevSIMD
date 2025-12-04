@@ -105,13 +105,13 @@ void FHECKKSRNS::EvalBootstrapSetup(const CryptoContextImpl<DCRTPoly>& cc, std::
             // We chose the best fit line from our experiments by running ckks-bootstrapping-precision.cpp.
             // The spreadsheet with our experiments is here:
             // https://docs.google.com/spreadsheets/d/1WqmwBUMNGlX6Uvs9qLXt5yeddtCyWPP55BbJPu5iPAM/edit?usp=sharing
+            // AA: update spreadsheet
             uint32_t tmp       = (BTSlotsEncoding == false) ?
                                      std::round(-0.265 * (2 * std::log2(M / 2) + std::log2(slots)) + 19.1) :
                                      std::round(-0.1887 * (2 * std::log2(M / 2) + std::log2(slots)) + 18.763);
             m_correctionFactor = std::clamp<uint32_t>(tmp, 7, 14);
         }
         else {
-            // m_correctionFactor = (BTSlotsEncoding == false) ? 9 : 10;
             uint32_t tmp       = (BTSlotsEncoding == false) ?
                                      std::round(-0.1871 * (2 * std::log2(M / 2) + std::log2(slots)) + 14.829) :
                                      std::round(-0.108 * (2 * std::log2(M / 2) + std::log2(slots)) + 14.069);
@@ -437,8 +437,10 @@ Ciphertext<DCRTPoly> FHECKKSRNS::EvalBootstrap(ConstCiphertext<DCRTPoly>& cipher
     uint32_t slots = ciphertext->GetSlots();
     auto& p        = GetBootPrecom(slots);
 
-    if (p.BTSlotsEncoding)
+    if (p.BTSlotsEncoding) {
         return EvalBootstrapStCFirst(ciphertext, numIterations, precision);
+        // AA: Note that in the FIXEDMANUAL case, EvalBootstrap and EvalBootstrapStCFirst return ciphertexts with different NoiseDeg.
+    }
 
     const auto cryptoParams = std::dynamic_pointer_cast<CryptoParametersCKKSRNS>(ciphertext->GetCryptoParameters());
 
@@ -477,7 +479,7 @@ Ciphertext<DCRTPoly> FHECKKSRNS::EvalBootstrap(ConstCiphertext<DCRTPoly>& cipher
         // Step 4: Scale up by powerOfTwoModulus.
         cc->GetScheme()->MultByIntegerInPlace(ctInitialBootstrap, powerOfTwoModulus);
 
-        // If we start with more towers, than we obtain from bootstrapping, return the original ciphertext.
+        // If we start with more towers than we obtain from bootstrapping, return the original ciphertext.
         auto bootstrappingSizeQ = ctInitialBootstrap->GetElements()[0].GetNumOfElements();
         if (bootstrappingSizeQ <= initSizeQ)
             return ciphertext->Clone();
@@ -872,12 +874,13 @@ Ciphertext<DCRTPoly> FHECKKSRNS::EvalBootstrapStCFirst(ConstCiphertext<DCRTPoly>
 
         // Step 3: Bootstrap the initial ciphertext.
         auto ctInitialBootstrap = EvalBootstrapStCFirst(ciphertext, numIterations - 1, precision);
-        cc->GetScheme()->ModReduceInternalInPlace(ctInitialBootstrap, compositeDegree);
+        cc->GetScheme()->ModReduceInternalInPlace(ctInitialBootstrap,
+                                                  compositeDegree * (ctInitialBootstrap->GetNoiseScaleDeg() - 1));
 
         // Step 4: Scale up by powerOfTwoModulus.
         cc->GetScheme()->MultByIntegerInPlace(ctInitialBootstrap, powerOfTwoModulus);
 
-        // If we start with more towers, than we obtain from bootstrapping, return the original ciphertext.
+        // If we start with more towers than we obtain from bootstrapping, return the original ciphertext.
         auto bootstrappingSizeQ = ctInitialBootstrap->GetElements()[0].GetNumOfElements();
         if (bootstrappingSizeQ <= initSizeQ)
             return ciphertext->Clone();
@@ -905,7 +908,8 @@ Ciphertext<DCRTPoly> FHECKKSRNS::EvalBootstrapStCFirst(ConstCiphertext<DCRTPoly>
 
         // Step 8: Bootstrap the error.
         auto ctBootstrappedError = EvalBootstrapStCFirst(ctBootstrappingError, 1, 0);
-        cc->GetScheme()->ModReduceInternalInPlace(ctBootstrappedError, compositeDegree);
+        cc->GetScheme()->ModReduceInternalInPlace(ctBootstrappedError,
+                                                  compositeDegree * (ctBootstrappedError->GetNoiseScaleDeg() - 1));
 
         // Step 9: Subtract the bootstrapped error from the initial bootstrap to get even lower error.
         auto finalCiphertext = cc->EvalSub(ctInitialBootstrap, ctBootstrappedError);
@@ -998,8 +1002,9 @@ Ciphertext<DCRTPoly> FHECKKSRNS::EvalBootstrapStCFirst(ConstCiphertext<DCRTPoly>
         ctxtDepleted->GetElements()[0].GetNumOfElements() - p.m_paramsDec.lvlb - 2 - (st == FLEXIBLEAUTOEXT);
 
     size_t sizeQl = ctxtDepleted->GetElements()[0].GetNumOfElements();
-    if (levelToReduce > 0 && levelToReduce < sizeQl) {
-        cc->GetScheme()->LevelReduceInternalInPlace(ctxtDepleted, compositeDegree * levelToReduce);
+
+    if (levelToReduce > 0 && levelToReduce * compositeDegree < sizeQl) {
+        cc->GetScheme()->LevelReduceInternalInPlace(ctxtDepleted, levelToReduce * compositeDegree);
     }
     else if (levelToReduce >= sizeQl) {
         OPENFHE_THROW("Not enough levels to perform Bootstrapping.");
@@ -1152,6 +1157,10 @@ Ciphertext<DCRTPoly> FHECKKSRNS::EvalBootstrapStCFirst(ConstCiphertext<DCRTPoly>
 
     // Evaluate Chebyshev series for the sine wave
     ctxtEnc = algo->EvalChebyshevSeries(ctxtEnc, coefficients, coeffLowerBound, coeffUpperBound);
+    // AA: Note that for sparse complex, we currently evaluate the polynomial over two ciphertexts.
+    // This can be optimized to a single ciphertext (without additional consumed levels) if the last
+    // multiplication of the EvalChebyshevSeries separates the real and imaginary parts and is
+    // combined with a multiplicative masking.
     if (cc->GetCKKSDataType() == COMPLEX)
         ctxtEncI = algo->EvalChebyshevSeries(ctxtEncI, coefficients, coeffLowerBound, coeffUpperBound);
 
@@ -2176,7 +2185,7 @@ uint32_t FHECKKSRNS::GetBootstrapDepth(uint32_t approxModDepth, const std::vecto
 
 uint32_t FHECKKSRNS::GetBootstrapDepth(const std::vector<uint32_t>& levelBudget, SecretKeyDist secretKeyDist) {
     uint32_t approxModDepth = GetModDepthInternal(secretKeyDist);
-    // Andreea: where are the scalings by double constants captured? Not all are merged with encoding and decoding
+    // AA: where are the scalings by double constants captured? Not all are merged with encoding and decoding
     // One correction is performed before ModRaise, so it is not visible here and we assume the user accounts for this is levelsAfterBootstrap.
     // In StCFirst, we currently specify with how many levels we start and we want to remain, and those contain
     // levelBudget[1] + 1, and specify {levelBudget[0], 0} as the input to this function.
@@ -3015,7 +3024,7 @@ std::shared_ptr<seriesPowers<DCRTPoly>> FHECKKSRNS::EvalMVBPrecomputeInternal(
     algo->ModReduceInternalInPlace(raised, raised->GetNoiseScaleDeg() - 1);
 
     // If correction ~ 1, we should not do this adjustment and save a level
-    // Andreea: make the check more granular
+    // AA: make the check more granular
     if (std::llround(correction) != 1.0)
         AdjustCiphertextFBT(raised, correction);
 

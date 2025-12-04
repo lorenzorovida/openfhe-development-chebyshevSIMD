@@ -290,7 +290,6 @@ void SimpleBootstrapStCFirstExample() {
     const auto cryptoParams = std::dynamic_pointer_cast<CryptoParametersCKKSRNS>(cryptoContext->GetCryptoParameters());
     usint compositeDegree   = cryptoParams->GetCompositeDegree();
     // We start with a depleted ciphertext that has used up all of its levels.
-    // Plaintext ptxt = cryptoContext->MakeCKKSPackedPlaintext(x, 1, depth - 1);
     Plaintext ptxt = cryptoContext->MakeCKKSPackedPlaintext(x, 1, compositeDegree * (depth - 1 - levelBudget[1]));
 
     std::cout << "Composite degree: " << compositeDegree

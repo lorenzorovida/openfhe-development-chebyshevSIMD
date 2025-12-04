@@ -99,7 +99,7 @@ double MeasureBootstrapPrecision(uint32_t numSlots, uint32_t correctionFactor) {
     parameters.SetScalingTechnique(rescaleTech);
     parameters.SetFirstModSize(firstMod);
 
-    std::vector<uint32_t> levelBudget      = {1, 1};
+    std::vector<uint32_t> levelBudget      = {3, 3};
     uint32_t approxBootstrapDepth          = 9;
     std::vector<uint32_t> bsgsDim          = {0, 0};
     uint32_t levelsAvailableAfterBootstrap = 10;
@@ -164,7 +164,7 @@ double MeasureStCFirstBootstrapPrecision(uint32_t numSlots, uint32_t correctionF
     parameters.SetScalingTechnique(rescaleTech);
     parameters.SetFirstModSize(firstMod);
 
-    std::vector<uint32_t> levelBudget      = {1, 1};
+    std::vector<uint32_t> levelBudget      = {3, 3};
     std::vector<uint32_t> bsgsDim          = {0, 0};
     uint32_t levelsAvailableAfterBootstrap = 10 + levelBudget[1];
     usint depth = levelsAvailableAfterBootstrap + FHECKKSRNS::GetBootstrapDepth({levelBudget[0], 0}, secretKeyDist);
