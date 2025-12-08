@@ -560,12 +560,13 @@ protected:
     void UnitTest_Bootstrap_Iterative(const TEST_CASE_UTCKKSRNS_BOOT& testData, const bool StCFlag,
                                       const std::string& failmsg = std::string()) {
         try {
-            std::cerr << "StCFlag: " << StCFlag << std::endl;
+            std::cerr << "\n\n--------------------StCFlag: " << StCFlag << std::endl;
             CryptoContext<Element> cc(UnitTestGenerateContext(testData.params));
 
             cc->EvalBootstrapSetup(testData.levelBudget, testData.dim1, testData.slots, 0, true, StCFlag);
 
             auto keyPair = cc->KeyGen();
+            cc->SetPrivateKey(keyPair.secretKey);
             cc->EvalBootstrapKeyGen(keyPair.secretKey, testData.slots);
             cc->EvalAtIndexKeyGen(keyPair.secretKey, {6});
             cc->EvalMultKeyGen(keyPair.secretKey);
@@ -574,6 +575,12 @@ protected:
             auto input(Fill({0.111111 + 0.999999i, 0.222222 - 0.888888i, 0.333333 + 0.777777i, 0.444444 - 0.666666i,
                              0.555555 + 0.555555i, 0.666666 - 0.444444i, 0.777777 + 0.333333i, 0.888888 - 0.222222i},
                             testData.slots));
+
+            // auto input(Fill({-0.024034938 + 0.i, 0.0023604636 + 0.i, 0.0019011264 + 0.i, 0.0020033208 + 0.i, -0.008256733 + 0.i, -0.024856087 + 0.i, -0.02064085 + 0.i, -0.014248725 + 0.i, 0.00094447611 + 0.i, 0.004367249 + 0.i, -0.0010716465 + 0.i, -0.015899997 + 0.i, -0.0094264157 + 0.i, -0.016898375 + 0.i, -0.0090470879 + 0.i, -0.016575955 + 0.i, 0.0044784121 + 0.i, -0.004020746 + 0.i, -0.0034423226 + 0.i, -0.0024260629 + 0.i, 0.0066782921 + 0.i, -0.0066972422 + 0.i, -0.017400773 + 0.i, -0.023793488 + 0.i, -0.0028974161 + 0.i, 0.0076833454 + 0.i, 0.0047845235 + 0.i, -0.0015907281 + 0.i, -0.0047467563 + 0.i, -0.0039078954 + 0.i, -0.0047174201 + 0.i, -0.0097378001 + 0.i},
+            //                 testData.slots));
+            // // AA: Bootstrapped version in the second iteration when the above is the error is much worse. It is not due to multiplying by 2^precision. Is it because of more accumulated noise when the ciphertext is the computed error?
+            // // BootstrappedError: (-0.012931886, 0.0021627338, 0.0026122062, -0.0046034282, -0.0024872657, -0.012638147, -0.020006642, -0.016432559, 0.0041501339, 0.0035808165, -0.0025509831, -0.006920347, -0.0033214231, -0.014532132, -0.0074519333, -0.013603171, -0.0015819369, -0.0039145811, -0.0070305511, -0.0043003006, 0.0025599579, -0.010764838, -0.009375052, -0.017319495, 0.0005627185, 0.0022903083, -0.001827431, 0.001163707, -0.0010385121, -0.0052666781, -0.0052722826, -0.017039858, ... ); Estimated precision: 27 bits
+
             size_t encodedLength = input.size();
 
             Plaintext plaintext = cc->MakeCKKSPackedPlaintext(
@@ -597,7 +604,7 @@ protected:
 
             Plaintext resultTwoIterations;
             cc->Decrypt(keyPair.secretKey, ciphertextTwoIterations, &resultTwoIterations);
-            result->SetLength(encodedLength);
+            resultTwoIterations->SetLength(encodedLength);
             auto actualResult = resultTwoIterations->GetCKKSPackedValue();
             checkEquality(actualResult, plaintext->GetCKKSPackedValue(), eps,
                           failmsg + " Bootstrapping with " + std::to_string(numIterations) + " iterations failed for " +

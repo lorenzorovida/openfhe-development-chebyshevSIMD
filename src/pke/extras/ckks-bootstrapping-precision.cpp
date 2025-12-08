@@ -57,16 +57,16 @@ double CalculateApproximationError(const std::vector<std::complex<double>>& resu
     }
 
     avrg = std::sqrt(avrg) / result.size();  // get the average
-    return std::abs(std::log2(avrg));
+    return std::abs(std::log2(avrg)); // does not distinguish between good precision and large errors.
 }
 
 int main(int argc, char* argv[]) {
 #if NATIVEINT == 64
-    size_t numIterations           = 10;
-    size_t maxCorrectionFactor     = 10;
-    std::vector<uint32_t> slotsVec = {1 << 11, 1 << 15};  // 1 << 3, 1 << 9,
+    size_t numIterations           = 1;
+    size_t maxCorrectionFactor     = 14;
+    std::vector<uint32_t> slotsVec = {1 << 3, 1 << 7, 1 << 9, 1 << 11}; // , 1 << 15};
     for (uint32_t numSlots : slotsVec) {
-        for (size_t correctionFactor = 10; correctionFactor <= maxCorrectionFactor; correctionFactor++) {
+        for (size_t correctionFactor = 7; correctionFactor <= maxCorrectionFactor; correctionFactor++) {
             std::cout << "`=======================================================================" << std::endl;
             std::cout << "Number of slots: " << numSlots << std::endl;
             std::cout << "Correction Factor: " << correctionFactor << std::endl;
@@ -90,10 +90,10 @@ double MeasureBootstrapPrecision(uint32_t numSlots, uint32_t correctionFactor) {
     parameters.SetSecretKeyDist(secretKeyDist);
 
     parameters.SetSecurityLevel(HEStd_NotSet);
-    parameters.SetRingDim(1 << 16);
+    parameters.SetRingDim(1 << 12);
 
     ScalingTechnique rescaleTech = FLEXIBLEAUTOEXT;
-    usint dcrtBits               = 50;
+    usint dcrtBits               = 59;
     usint firstMod               = 60;
     parameters.SetScalingModSize(dcrtBits);
     parameters.SetScalingTechnique(rescaleTech);
@@ -155,10 +155,10 @@ double MeasureStCFirstBootstrapPrecision(uint32_t numSlots, uint32_t correctionF
     parameters.SetSecretKeyDist(secretKeyDist);
 
     parameters.SetSecurityLevel(HEStd_NotSet);
-    parameters.SetRingDim(1 << 16);
+    parameters.SetRingDim(1 << 12);
 
     ScalingTechnique rescaleTech = FLEXIBLEAUTOEXT;
-    usint dcrtBits               = 50;
+    usint dcrtBits               = 59;
     usint firstMod               = 60;
     parameters.SetScalingModSize(dcrtBits);
     parameters.SetScalingTechnique(rescaleTech);

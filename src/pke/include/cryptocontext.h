@@ -475,12 +475,12 @@ protected:
         return cryptoParams->GetCompositeDegree();
     }
 
-#ifdef DEBUG_KEY
+// #ifdef DEBUG_KEY
     PrivateKey<Element> privateKey;
-#endif
+// #endif
 
 public:
-#ifdef DEBUG_KEY
+// #ifdef DEBUG_KEY
     /**
     * SetPrivateKey() stores the private key in the crypto context.
     * GetPrivateKey() gets the private key from the crypto context.
@@ -509,7 +509,7 @@ public:
     const PrivateKey<Element>& GetPrivateKey() const {
         return this->privateKey;
     }
-#endif
+// #endif
 
     void setSchemeId(SCHEME schemeTag) {
         this->m_schemeId = schemeTag;
