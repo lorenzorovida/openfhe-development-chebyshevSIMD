@@ -62,7 +62,7 @@ double CalculateApproximationError(const std::vector<std::complex<double>>& resu
 
 int main(int argc, char* argv[]) {
 #if NATIVEINT == 64
-    size_t numIterations           = 1;
+    size_t numIterations           = 10;
     size_t maxCorrectionFactor     = 14;
     std::vector<uint32_t> slotsVec = {1 << 3, 1 << 7, 1 << 9, 1 << 11}; // , 1 << 15};
     for (uint32_t numSlots : slotsVec) {

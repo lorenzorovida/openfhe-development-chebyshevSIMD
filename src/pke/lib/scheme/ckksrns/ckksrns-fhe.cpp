@@ -383,7 +383,7 @@ void FHECKKSRNS::EvalBootstrapPrecompute(const CryptoContextImpl<DCRTPoly>& cc, 
         lDec = L0 - compositeDegree * depthBT;
     }
     else {
-        lDec = (2 + (st == FLEXIBLEAUTOEXT)) * compositeDegree;
+        lDec = (1 + (st == FLEXIBLEAUTOEXT)) * compositeDegree;
     }
 
     bool isLTBootstrap = (p.m_paramsEnc.lvlb == 1) && (p.m_paramsDec.lvlb == 1);
@@ -887,7 +887,7 @@ Ciphertext<DCRTPoly> FHECKKSRNS::EvalBootstrapStCFirst(ConstCiphertext<DCRTPoly>
         uint32_t powerOfTwoModulus = 1 << precision;
 
         // Step 3: Bootstrap the initial ciphertext.
-        auto ctInitialBootstrap = EvalBootstrapStCFirst(ciphertext, numIterations - 1, precision); // EvalBootstrapStCFirst(ciphertext, numIterations - 1, precision);
+        auto ctInitialBootstrap = EvalBootstrapStCFirst(ciphertext, numIterations - 1, precision);
         cc->GetScheme()->ModReduceInternalInPlace(ctInitialBootstrap,
                                                   compositeDegree * (ctInitialBootstrap->GetNoiseScaleDeg() - 1));
         auto privateKey = cc->GetPrivateKey();
@@ -1027,25 +1027,28 @@ Ciphertext<DCRTPoly> FHECKKSRNS::EvalBootstrapStCFirst(ConstCiphertext<DCRTPoly>
     std::cerr << "\nScalingFactor at the beginning of BT: " << std::setprecision(20) << ctxtDepleted->GetScalingFactor() << " at (level, SF deg) = (" << ctxtDepleted->GetLevel() << ", " << ctxtDepleted->GetNoiseScaleDeg() << ") vs expected scaling factor " << cryptoParams->GetScalingFactorReal(ctxtDepleted->GetLevel()) << std::endl;
     
     // Adjust scaling factors and scale of message
-    uint32_t lvl       = cryptoParams->GetScalingTechnique() != FLEXIBLEAUTOEXT ? L0 - (p.m_paramsDec.lvlb - 1) * compositeDegree : L0 - 1 - (p.m_paramsDec.lvlb - 1) * compositeDegree;
+    uint32_t lvl       = cryptoParams->GetScalingTechnique() != FLEXIBLEAUTOEXT ? L0 - (p.m_paramsDec.lvlb + 1) * compositeDegree : L0 - 1 - (p.m_paramsDec.lvlb + 1) * compositeDegree;
+    std::cerr << "lvl = " << lvl << std::endl;
     AdjustCiphertext(ctxtDepleted, std::pow(2, -static_cast<int32_t>(correction)), lvl);
 
     std::cerr << "\nScalingFactor after ajusting SF: " << ctxtDepleted->GetScalingFactor() << " at (level, SF deg) = (" << ctxtDepleted->GetLevel() << ", " << ctxtDepleted->GetNoiseScaleDeg() << ") vs expected scaling factor " << cryptoParams->GetScalingFactorReal(ctxtDepleted->GetLevel()) << std::endl;
 
     // Only work with the minimum number of required levels. Note the scaling factors were already adjusted
     auto levelToReduce =
-        ctxtDepleted->GetElements()[0].GetNumOfElements() - p.m_paramsDec.lvlb - 1 - (st == FLEXIBLEAUTOEXT);
+        ctxtDepleted->GetElements()[0].GetNumOfElements() - (p.m_paramsDec.lvlb + 1) * compositeDegree - (st == FLEXIBLEAUTOEXT);
+
+    std::cerr << "levelToReduce: " << levelToReduce << ", " << ctxtDepleted->GetElements()[0].GetNumOfElements() << std::endl;
 
     size_t sizeQl = ctxtDepleted->GetElements()[0].GetNumOfElements();
 
     if (levelToReduce > 0 && levelToReduce * compositeDegree < sizeQl) {
-        cc->GetScheme()->LevelReduceInternalInPlace(ctxtDepleted, levelToReduce * compositeDegree);
+        cc->GetScheme()->LevelReduceInternalInPlace(ctxtDepleted, levelToReduce);
     }
     else if (levelToReduce >= sizeQl) {
         OPENFHE_THROW("Not enough levels to perform Bootstrapping.");
     }
 
-    std::cerr << "\nScalingFactor after ajusting levels: " << ctxtDepleted->GetScalingFactor() << " at (level, SF deg) = (" << ctxtDepleted->GetLevel() << ", " << ctxtDepleted->GetNoiseScaleDeg() << ") expected scaling factor " << cryptoParams->GetScalingFactorReal(ctxtDepleted->GetLevel()) << std::endl;
+    std::cerr << "\nScalingFactor after ajusting levels and SF: " << ctxtDepleted->GetScalingFactor() << " at (level, SF deg) = (" << ctxtDepleted->GetLevel() << ", " << ctxtDepleted->GetNoiseScaleDeg() << ") expected scaling factor " << cryptoParams->GetScalingFactorReal(ctxtDepleted->GetLevel()) << std::endl;
 
     Ciphertext<DCRTPoly> ctxtEnc;
     //------------------------------------------------------------------------------
@@ -1128,14 +1131,15 @@ Ciphertext<DCRTPoly> FHECKKSRNS::EvalBootstrapStCFirst(ConstCiphertext<DCRTPoly>
 #endif
 
     std::cerr << "\nScalingFactor after raising: " << raised->GetScalingFactor() << " at (level, SF deg) = (" << raised->GetLevel() << ", " << raised->GetNoiseScaleDeg() << ") expected scaling factor " << cryptoParams->GetScalingFactorReal(raised->GetLevel()) << std::endl;
-
+    // AA: In FLEXIBLEAUTOEXT, it starts from (1,1) instead of (0,1)
+    
     double normalization = pre * (1.0 / (k * N));
     // Scaling adjustment before Coefficient to Slots
     // cc->EvalMultInPlace(raised, normalization);
-    AdjustCiphertext(raised, normalization, compositeDegree, false);
-    // AdjustCiphertext(raised, normalization, compositeDegree, true);
+    AdjustCiphertext(raised, normalization, 1 * compositeDegree, false);
+    // AdjustCiphertext(raised, normalization, 1 * compositeDegree, true);
 
-    std::cerr << "\nScalingFactor after normalizing: " << raised->GetScalingFactor() << " at (level, SF deg) = (" << raised->GetLevel() << ", " << raised->GetNoiseScaleDeg() << ") expected scaling factor " << cryptoParams->GetScalingFactorReal(raised->GetLevel()) << std::endl  << std::endl;
+    std::cerr << "\nScalingFactor after normalizing with SF adjustment: " << raised->GetScalingFactor() << " at (level, SF deg) = (" << raised->GetLevel() << ", " << raised->GetNoiseScaleDeg() << ") expected scaling factor " << cryptoParams->GetScalingFactorReal(raised->GetLevel()) << std::endl;
 
     if (slots != N / 2) {
         //------------------------------------------------------------------------------
@@ -1162,7 +1166,7 @@ Ciphertext<DCRTPoly> FHECKKSRNS::EvalBootstrapStCFirst(ConstCiphertext<DCRTPoly>
     algo->ModReduceInternalInPlace(raised, compositeDegree);
     raised->SetScalingFactor(cryptoParams->GetScalingFactorReal(compositeDegree));
 
-    std::cerr << "\nScalingFactor before CtS: " << raised->GetScalingFactor() << " at (level, SF deg) = (" << raised->GetLevel() << ", " << raised->GetNoiseScaleDeg() << ") expected scaling factor " << cryptoParams->GetScalingFactorReal(raised->GetLevel()) << std::endl;
+    std::cerr << "\nScalingFactor before CtS: " << raised->GetScalingFactor() << " at (level, SF deg) = (" << raised->GetLevel() << ", " << raised->GetNoiseScaleDeg() << ") expected scaling factor " << cryptoParams->GetScalingFactorReal(raised->GetLevel()) << std::endl << std::endl;
 
     ctxtEnc =
         (isLTBootstrap) ? EvalLinearTransform(p.m_U0hatTPre, raised) : EvalCoeffsToSlots(p.m_U0hatTPreFFT, raised);
