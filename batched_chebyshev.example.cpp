@@ -8,6 +8,8 @@ using namespace std;
 using Ptxt = Plaintext;
 using Ctxt = Ciphertext<DCRTPoly>;
 
+void stressTest();
+
 int main(int argc, char *argv[]) {
     int num_slots = 2;
 
@@ -76,7 +78,7 @@ int main(int argc, char *argv[]) {
      */
 
     cout << endl << "******" << endl << endl;
-    
+
     coeffs1 = {3.4, 1.2, 0.8, 1.3, 0.0, 2.3, 1.1, 0.6, 0.3, 0.6, 3.0, 2.1, 0.3, 2.7, 2.9, 1.7, 2.2, 0.5, 0.5, 0.6, 1.6, 0.8, 0.6, 0.8, 1.8, 1.4, 1.6, 1.7, 2.5, 2.2, 0.2, 1.6, 1.9, 1.2, 1.9, 0.1, 1.0, 0.1, 1.4, 2.5, 2.9, 2.9, 2.7, 0.2, 0.0, 0.2, 2.0, 0.8, 1.3, 2.0};
     cout << "Test with 50 coefficients " << coeffs1 << " over x = 0.1, 0.2" << endl;
 
@@ -99,5 +101,97 @@ int main(int argc, char *argv[]) {
     cout << res << endl;
 
 
+    cout << "*****" << endl << "Now stressing: 8192 slots and 8192 polynomials of degree 495" << endl;
+
+    stressTest();
+}
+
+void stressTest() {
+    int num_slots = 1 << 13;
+
+    CCParams<CryptoContextCKKSRNS> parameters;
+
+    parameters.SetSecretKeyDist(lbcrypto::UNIFORM_TERNARY);
+
+    int dcrtBits = 49;
+    int firstMod = 50;
+
+    parameters.SetSecurityLevel(lbcrypto::HEStd_NotSet);
+    parameters.SetRingDim(1 << 14);
+
+    cout << "N: " << parameters.GetRingDim() << endl << endl;
+
+    parameters.SetBatchSize(num_slots);
+
+    ScalingTechnique rescaleTech = FLEXIBLEAUTO;
+
+    parameters.SetScalingModSize(dcrtBits);
+    parameters.SetScalingTechnique(rescaleTech);
+    parameters.SetFirstModSize(firstMod);
+    parameters.SetMultiplicativeDepth(12);
+
+
+    CryptoContext<DCRTPoly> context = GenCryptoContext(parameters);
+    context->Enable(PKE);
+    context->Enable(KEYSWITCH);
+    context->Enable(LEVELEDSHE);
+    context->Enable(ADVANCEDSHE);
+
+    KeyPair<DCRTPoly> key_pair = context->KeyGen();
+    context->EvalMultKeyGen(key_pair.secretKey);
+
+    /*
+     * Reading the input vector
+     */
+    std::ifstream input_file("../coeffs/input.txt");
+    std::vector<double> input;
+    double x;
+
+    while (input_file >> x) {
+        input.push_back(x);
+    }
+
+    cout << "Input: " << input << endl;
+
+    /*
+     * Reading the coefficients
+     */
+    std::vector<std::vector<double>> coeffs;
+
+    for (int i = 0; i < num_slots; i++) {
+        std::ifstream file("../coeffs/p" + std::to_string(i + 1) + ".txt");
+        std::vector<double> values;
+        double a;
+
+        while (file >> a) {
+            values.push_back(a);
+        }
+
+        values[0] *= 2;
+
+        coeffs.push_back(values);
+    }
+
+    cout << "I have a set of " << coeffs.size() << " coefficients, each of size " << coeffs[0].size() << endl;
+
+    Ptxt p = context->MakeCKKSPackedPlaintext(input, 1, 0, nullptr, num_slots);
+    Ctxt c = context->Encrypt(p, key_pair.publicKey);
+
+    c = context->EvalChebyshevSeriesPSBatch(c, coeffs, -1, 1);
+
+    context->Decrypt(c, key_pair.secretKey, &p);
+
+    std::ifstream expected_file("../coeffs/expected.txt");
+    std::vector<double> expected;
+
+    while (expected_file >> x) {
+        expected.push_back(x);
+    }
+
+    cout << "Expected: " << expected << endl;
+
+    std::vector<double> obtained = p->GetRealPackedValue();
+
+    cout << "Obtained: " << obtained << endl;
 }
 

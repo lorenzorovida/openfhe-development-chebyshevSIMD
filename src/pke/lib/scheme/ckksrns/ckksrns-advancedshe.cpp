@@ -204,7 +204,7 @@ static inline Ciphertext<DCRTPoly> internalEvalLinearWSumMutableBatch(
                 tmp.push_back(setOfConstants[j][i]);
             }
             else {
-                std::cerr << "Not implemented for type: " << typeid(VectorDataType).name() << std::endl;
+                OPENFHE_THROW("Not implemented for type: " << typeid(VectorDataType).name());
             }
         }
 
@@ -1142,7 +1142,7 @@ static Ciphertext<DCRTPoly> InnerEvalChebyshevPSBatch(ConstCiphertext<DCRTPoly>&
             batchOfCoefficientsDouble.push_back(std::move(converted));
         }
     } else {
-        std::cerr << "Not implemented for type: " << typeid(VectorDataType).name() << std::endl;
+        OPENFHE_THROW("Not implemented for type: " << typeid(VectorDataType).name());
     }
 
     std::vector<std::shared_ptr<longDiv<double>>> divcsVec;
@@ -1687,7 +1687,7 @@ static inline Ciphertext<DCRTPoly> internalEvalChebyshevSeriesPSBatchWithPrecomp
             batchOfCoefficientsDouble.push_back(std::move(converted));
         }
     } else {
-        std::cerr << "Not implemented for type: " << typeid(VectorDataType).name() << std::endl;
+        OPENFHE_THROW("Not implemented for type: " << typeid(VectorDataType).name());
     }
 
     std::vector<std::shared_ptr<longDiv<double>>> divcsVec;
@@ -1700,7 +1700,7 @@ static inline Ciphertext<DCRTPoly> internalEvalChebyshevSeriesPSBatchWithPrecomp
     std::size_t size = batchOfCoefficients[0].size();
     for (const auto& inner : batchOfCoefficients) {
         if (inner.size() != size) {
-            std::cerr << "The batch must contain coefficients of the same size!" << std::endl;
+            OPENFHE_THROW("The batch must contain coefficients of the same size!");
         }
     }
 
@@ -2037,8 +2037,7 @@ Ciphertext<DCRTPoly> AdvancedSHECKKSRNS::EvalChebyshevSeriesPSBatch(ConstCiphert
                                                                const std::vector<std::vector<int64_t>>& batchOfCoefficients,
                                                                double a, double b) const {
     if (batchOfCoefficients.size() != x->GetSlots())
-        std::cerr << "The set of coefficients must be as large as the number of slots of the input ciphertext"
-                  << std::endl;
+        OPENFHE_THROW("The set of coefficients must be as large as the number of slots of the input ciphertext");
 
     return internalEvalChebyshevSeriesPSBatchWithPrecomp(internalEvalChebyPolysPS(x, batchOfCoefficients[0], a, b), batchOfCoefficients);
 }
@@ -2046,8 +2045,7 @@ Ciphertext<DCRTPoly> AdvancedSHECKKSRNS::EvalChebyshevSeriesPSBatch(ConstCiphert
                                                                       const std::vector<std::vector<double>>& batchOfCoefficients,
                                                                       double a, double b) const {
     if (batchOfCoefficients.size() != x->GetSlots())
-        std::cerr << "The set of coefficients must be as large as the number of slots of the input ciphertext"
-                  << std::endl;
+        OPENFHE_THROW("The set of coefficients must be as large as the number of slots of the input ciphertext");
 
     return internalEvalChebyshevSeriesPSBatchWithPrecomp(internalEvalChebyPolysPS(x, batchOfCoefficients[0], a, b), batchOfCoefficients);
 }
@@ -2055,8 +2053,7 @@ Ciphertext<DCRTPoly> AdvancedSHECKKSRNS::EvalChebyshevSeriesPSBatch(
     ConstCiphertext<DCRTPoly>& x, const std::vector<std::vector<std::complex<double>>>& batchOfCoefficients, double a, double b)
     const {
     if (batchOfCoefficients.size() != x->GetSlots())
-        std::cerr << "The set of coefficients must be as large as the number of slots of the input ciphertext"
-                  << std::endl;
+        OPENFHE_THROW("The set of coefficients must be as large as the number of slots of the input ciphertext");
 
     return internalEvalChebyshevSeriesPSBatchWithPrecomp(internalEvalChebyPolysPS(x, batchOfCoefficients[0], a, b), batchOfCoefficients);
 }
