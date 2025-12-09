@@ -172,7 +172,7 @@ void stressTest() {
         coeffs.push_back(values);
     }
 
-    cout << "I have a set of " << coeffs.size() << " coefficients, each of size " << coeffs[0].size() << endl;
+    cout << endl << "I have a set of " << coeffs.size() << " coefficients, each of size " << coeffs[0].size() << endl << endl;
 
     Ptxt p = context->MakeCKKSPackedPlaintext(input, 1, 0, nullptr, num_slots);
     Ctxt c = context->Encrypt(p, key_pair.publicKey);
@@ -192,6 +192,6 @@ void stressTest() {
 
     std::vector<double> obtained = p->GetRealPackedValue();
 
-    cout << "Obtained: " << obtained << endl;
+    cout << endl << "Obtained: " << obtained << endl;
 }
 
