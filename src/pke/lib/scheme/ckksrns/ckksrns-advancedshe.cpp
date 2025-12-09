@@ -204,7 +204,7 @@ static inline Ciphertext<DCRTPoly> internalEvalLinearWSumMutableBatch(
                 tmp.push_back(setOfConstants[j][i]);
             }
             else {
-                OPENFHE_THROW("Not implemented for type: " << typeid(VectorDataType).name());
+                OPENFHE_THROW(std::string("Not implemented for type: ") + typeid(VectorDataType).name());
             }
         }
 
@@ -1142,7 +1142,7 @@ static Ciphertext<DCRTPoly> InnerEvalChebyshevPSBatch(ConstCiphertext<DCRTPoly>&
             batchOfCoefficientsDouble.push_back(std::move(converted));
         }
     } else {
-        OPENFHE_THROW("Not implemented for type: " << typeid(VectorDataType).name());
+        OPENFHE_THROW(std::string("Not implemented for type: ") + typeid(VectorDataType).name());
     }
 
     std::vector<std::shared_ptr<longDiv<double>>> divcsVec;
@@ -1687,7 +1687,7 @@ static inline Ciphertext<DCRTPoly> internalEvalChebyshevSeriesPSBatchWithPrecomp
             batchOfCoefficientsDouble.push_back(std::move(converted));
         }
     } else {
-        OPENFHE_THROW("Not implemented for type: " << typeid(VectorDataType).name());
+        OPENFHE_THROW(std::string("Not implemented for type: ") + typeid(VectorDataType).name());
     }
 
     std::vector<std::shared_ptr<longDiv<double>>> divcsVec;
