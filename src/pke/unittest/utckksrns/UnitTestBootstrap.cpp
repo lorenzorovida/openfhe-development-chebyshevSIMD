@@ -131,7 +131,7 @@ static std::ostream& operator<<(std::ostream& os, const TEST_CASE_UTCKKSRNS_BOOT
 }
 
 //===========================================================================================================
-constexpr uint32_t MULT_DEPTH   = 17;
+constexpr uint32_t MULT_DEPTH   = 25;
 constexpr uint32_t RDIM         = 64;
 constexpr uint32_t NUM_LRG_DIGS = 3;
 
@@ -302,30 +302,30 @@ static std::vector<TEST_CASE_UTCKKSRNS_BOOT> testCases = {
     // ==========================================
     // TestType,          Descr,          Scheme, RDim,  MultDepth, SModSize, DSize, BSize, SecKeyDist, MaxRelinSkDeg, FModSize,       SecLvl, KSTech,        ScalTech,      LDigits, PtMod,StdDev, EvalAddCt, KSCt, MultTech, EncTech, PREMode, MultipartyMode, decryptionNoiseMode, ExecutionMode, NoiseEstimate, RegisterWordSize, CompositeDegree, CKKSDataType, LvlBudget, Dim1,       Slots
     { BOOTSTRAP_ITERATIVE, "01", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH, SMODSIZE,  DFLT,     8,      SPARSE_TERNARY, DFLT, FMODSIZE, HEStd_NotSet, HYBRID,       FIXEDAUTO, NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT,   DFLT,  DFLT,   DFLT,      DFLT, DFLT, DFLT, REAL},   { 3, 2 },  { 0, 0 }, 8},
-    { BOOTSTRAP_ITERATIVE, "02", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH, SMODSIZE,  DFLT,     8,     UNIFORM_TERNARY, DFLT, FMODSIZE, HEStd_NotSet, HYBRID,       FIXEDAUTO, NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT,   DFLT,  DFLT,   DFLT,      DFLT, DFLT, DFLT, REAL},   { 1, 1 },  { 0, 0 }, 8},
+    { BOOTSTRAP_ITERATIVE, "02", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH, SMODSIZE,  DFLT,     8,     UNIFORM_TERNARY, DFLT, FMODSIZE, HEStd_NotSet, HYBRID,       FIXEDAUTO, NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT,   DFLT,  DFLT,   DFLT,      DFLT, DFLT, DFLT, REAL},   { 3, 2 },  { 0, 0 }, 8},
     { BOOTSTRAP_ITERATIVE, "03", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH, SMODSIZE,  DFLT,     8,      SPARSE_TERNARY, DFLT, FMODSIZE, HEStd_NotSet, HYBRID,     FIXEDMANUAL, NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT,   DFLT,  DFLT,   DFLT,      DFLT, DFLT, DFLT, REAL},   { 3, 2 },  { 0, 0 }, 8},
-    { BOOTSTRAP_ITERATIVE, "04", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH, SMODSIZE,  DFLT,     8,     UNIFORM_TERNARY, DFLT, FMODSIZE, HEStd_NotSet, HYBRID,     FIXEDMANUAL, NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT,   DFLT,  DFLT,   DFLT,      DFLT, DFLT, DFLT, REAL},   { 1, 1 },  { 0, 0 }, 8},
+    { BOOTSTRAP_ITERATIVE, "04", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH, SMODSIZE,  DFLT,     8,     UNIFORM_TERNARY, DFLT, FMODSIZE, HEStd_NotSet, HYBRID,     FIXEDMANUAL, NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT,   DFLT,  DFLT,   DFLT,      DFLT, DFLT, DFLT, REAL},   { 3, 2 },  { 0, 0 }, 8},
     { BOOTSTRAP_ITERATIVE, "05", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH, SMODSIZE,  DFLT,     8,      SPARSE_TERNARY, DFLT, FMODSIZE, HEStd_NotSet, HYBRID,       FIXEDAUTO, NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT,   DFLT,  DFLT,   DFLT,      DFLT, DFLT, DFLT, COMPLEX},   { 3, 2 },  { 0, 0 }, 8},
 #if NATIVEINT != 128
     { BOOTSTRAP_ITERATIVE, "06", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH, SMODSIZE,  DFLT,     8,      SPARSE_TERNARY, DFLT, FMODSIZE, HEStd_NotSet, HYBRID,    FLEXIBLEAUTO, NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT,   DFLT,  DFLT,   DFLT,      DFLT, DFLT, DFLT, REAL},   { 3, 2 },  { 0, 0 }, 8},
-    { BOOTSTRAP_ITERATIVE, "07", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH, SMODSIZE,  DFLT,     8,     UNIFORM_TERNARY, DFLT, FMODSIZE, HEStd_NotSet, HYBRID,    FLEXIBLEAUTO, NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT,   DFLT,  DFLT,   DFLT,      DFLT, DFLT, DFLT, REAL},   { 1, 1 },  { 0, 0 }, 8},
+    { BOOTSTRAP_ITERATIVE, "07", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH, SMODSIZE,  DFLT,     8,     UNIFORM_TERNARY, DFLT, FMODSIZE, HEStd_NotSet, HYBRID,    FLEXIBLEAUTO, NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT,   DFLT,  DFLT,   DFLT,      DFLT, DFLT, DFLT, REAL},   { 3, 2 },  { 0, 0 }, 8},
     { BOOTSTRAP_ITERATIVE, "08", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH, SMODSIZE,  DFLT,     8,      SPARSE_TERNARY, DFLT, FMODSIZE, HEStd_NotSet, HYBRID, FLEXIBLEAUTOEXT, NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT,   DFLT,  DFLT,   DFLT,      DFLT, DFLT, DFLT, REAL},   { 3, 2 },  { 0, 0 }, 8},
-    { BOOTSTRAP_ITERATIVE, "09", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH, SMODSIZE,  DFLT,     8,     UNIFORM_TERNARY, DFLT, FMODSIZE, HEStd_NotSet, HYBRID, FLEXIBLEAUTOEXT, NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT,   DFLT,  DFLT,   DFLT,      DFLT, DFLT, DFLT, REAL},   { 1, 1 },  { 0, 0 }, 8},
+    { BOOTSTRAP_ITERATIVE, "09", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH, SMODSIZE,  DFLT,     8,     UNIFORM_TERNARY, DFLT, FMODSIZE, HEStd_NotSet, HYBRID, FLEXIBLEAUTOEXT, NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT,   DFLT,  DFLT,   DFLT,      DFLT, DFLT, DFLT, REAL},   { 3, 2 },  { 0, 0 }, 8},
     { BOOTSTRAP_ITERATIVE, "10", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH, SMODSIZE,  DFLT,     8,      SPARSE_TERNARY, DFLT, FMODSIZE, HEStd_NotSet, HYBRID,    FLEXIBLEAUTO, NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT,   DFLT,  DFLT,   DFLT,      DFLT, DFLT, DFLT, COMPLEX},   { 3, 2 },  { 0, 0 }, 8},
 #endif
     // ==========================================
     // TestType,          Descr,          Scheme, RDim,  MultDepth, SModSize, DSize, BSize, SecKeyDist, MaxRelinSkDeg, FModSize,       SecLvl, KSTech,        ScalTech,      LDigits, PtMod,StdDev, EvalAddCt, KSCt, MultTech, EncTech, PREMode, MultipartyMode, decryptionNoiseMode, ExecutionMode, NoiseEstimate, RegisterWordSize, CompositeDegree, CKKSDataType, LvlBudget, Dim1,       Slots
     { BOOTSTRAP_ITERATIVE, "11", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH, SMODSIZE,  DFLT,  DFLT,      SPARSE_TERNARY, DFLT, FMODSIZE, HEStd_NotSet, HYBRID,       FIXEDAUTO, NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT,   DFLT,  DFLT,   DFLT,      DFLT, DFLT, DFLT, REAL},   { 3, 2 },  { 0, 0 }, RDIM/2},
-    { BOOTSTRAP_ITERATIVE, "12", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH, SMODSIZE,  DFLT,  DFLT,     UNIFORM_TERNARY, DFLT, FMODSIZE, HEStd_NotSet, HYBRID,       FIXEDAUTO, NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT,   DFLT,  DFLT,   DFLT,      DFLT, DFLT, DFLT, REAL},   { 1, 1 },  { 0, 0 }, RDIM/2},
+    { BOOTSTRAP_ITERATIVE, "12", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH, SMODSIZE,  DFLT,  DFLT,     UNIFORM_TERNARY, DFLT, FMODSIZE, HEStd_NotSet, HYBRID,       FIXEDAUTO, NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT,   DFLT,  DFLT,   DFLT,      DFLT, DFLT, DFLT, REAL},   { 3, 2 },  { 0, 0 }, RDIM/2},
     { BOOTSTRAP_ITERATIVE, "13", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH, SMODSIZE,  DFLT,  DFLT,      SPARSE_TERNARY, DFLT, FMODSIZE, HEStd_NotSet, HYBRID,     FIXEDMANUAL, NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT,   DFLT,  DFLT,   DFLT,      DFLT, DFLT, DFLT, REAL},   { 3, 2 },  { 0, 0 }, RDIM/2},
-    { BOOTSTRAP_ITERATIVE, "14", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH, SMODSIZE,  DFLT,  DFLT,     UNIFORM_TERNARY, DFLT, FMODSIZE, HEStd_NotSet, HYBRID,     FIXEDMANUAL, NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT,   DFLT,  DFLT,   DFLT,      DFLT, DFLT, DFLT, REAL},   { 1, 1 },  { 0, 0 }, RDIM/2},
-    { BOOTSTRAP_ITERATIVE, "15", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH, SMODSIZE,  DFLT,  DFLT,     UNIFORM_TERNARY, DFLT, FMODSIZE, HEStd_NotSet, HYBRID,       FIXEDAUTO, NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT,   DFLT,  DFLT,   DFLT,      DFLT, DFLT, DFLT, COMPLEX},   { 1, 1 },  { 0, 0 }, RDIM/2},
+    { BOOTSTRAP_ITERATIVE, "14", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH, SMODSIZE,  DFLT,  DFLT,     UNIFORM_TERNARY, DFLT, FMODSIZE, HEStd_NotSet, HYBRID,     FIXEDMANUAL, NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT,   DFLT,  DFLT,   DFLT,      DFLT, DFLT, DFLT, REAL},   { 3, 2 },  { 0, 0 }, RDIM/2},
+    { BOOTSTRAP_ITERATIVE, "15", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH, SMODSIZE,  DFLT,  DFLT,     UNIFORM_TERNARY, DFLT, FMODSIZE, HEStd_NotSet, HYBRID,       FIXEDAUTO, NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT,   DFLT,  DFLT,   DFLT,      DFLT, DFLT, DFLT, COMPLEX},   { 3, 2 },  { 0, 0 }, RDIM/2},
 #if NATIVEINT != 128
     { BOOTSTRAP_ITERATIVE, "16", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH, SMODSIZE,  DFLT,  DFLT,      SPARSE_TERNARY, DFLT, FMODSIZE, HEStd_NotSet, HYBRID,    FLEXIBLEAUTO, NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT,   DFLT,  DFLT,   DFLT,      DFLT, DFLT, DFLT, REAL},   { 3, 2 },  { 0, 0 }, RDIM/2},
-    { BOOTSTRAP_ITERATIVE, "17", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH, SMODSIZE,  DFLT,  DFLT,     UNIFORM_TERNARY, DFLT, FMODSIZE, HEStd_NotSet, HYBRID,    FLEXIBLEAUTO, NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT,   DFLT,  DFLT,   DFLT,      DFLT, DFLT, DFLT, REAL},   { 1, 1 },  { 0, 0 }, RDIM/2},
+    { BOOTSTRAP_ITERATIVE, "17", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH, SMODSIZE,  DFLT,  DFLT,     UNIFORM_TERNARY, DFLT, FMODSIZE, HEStd_NotSet, HYBRID,    FLEXIBLEAUTO, NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT,   DFLT,  DFLT,   DFLT,      DFLT, DFLT, DFLT, REAL},   { 3, 2 },  { 0, 0 }, RDIM/2},
     { BOOTSTRAP_ITERATIVE, "18", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH, SMODSIZE,  DFLT,  DFLT,      SPARSE_TERNARY, DFLT, FMODSIZE, HEStd_NotSet, HYBRID, FLEXIBLEAUTOEXT, NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT,   DFLT,  DFLT,   DFLT,      DFLT, DFLT, DFLT, REAL},   { 3, 2 },  { 0, 0 }, RDIM/2},
-    { BOOTSTRAP_ITERATIVE, "19", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH, SMODSIZE,  DFLT,  DFLT,     UNIFORM_TERNARY, DFLT, FMODSIZE, HEStd_NotSet, HYBRID, FLEXIBLEAUTOEXT, NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT,   DFLT,  DFLT,   DFLT,      DFLT, DFLT, DFLT, REAL},   { 1, 1 },  { 0, 0 }, RDIM/2},
-    { BOOTSTRAP_ITERATIVE, "20", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH, SMODSIZE,  DFLT,  DFLT,     UNIFORM_TERNARY, DFLT, FMODSIZE, HEStd_NotSet, HYBRID,    FLEXIBLEAUTO, NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT,   DFLT,  DFLT,   DFLT,      DFLT, DFLT, DFLT, COMPLEX},   { 1, 1 },  { 0, 0 }, RDIM/2},
+    { BOOTSTRAP_ITERATIVE, "19", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH, SMODSIZE,  DFLT,  DFLT,     UNIFORM_TERNARY, DFLT, FMODSIZE, HEStd_NotSet, HYBRID, FLEXIBLEAUTOEXT, NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT,   DFLT,  DFLT,   DFLT,      DFLT, DFLT, DFLT, REAL},   { 3, 2 },  { 0, 0 }, RDIM/2},
+    { BOOTSTRAP_ITERATIVE, "20", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH, SMODSIZE,  DFLT,  DFLT,     UNIFORM_TERNARY, DFLT, FMODSIZE, HEStd_NotSet, HYBRID,    FLEXIBLEAUTO, NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT,   DFLT,  DFLT,   DFLT,      DFLT, DFLT, DFLT, COMPLEX},   { 3, 2 },  { 0, 0 }, RDIM/2},
 #endif
     { BOOTSTRAP_ITERATIVE, "21", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH, SMODSIZE,  DFLT,     8, SPARSE_ENCAPSULATED, DFLT, FMODSIZE, HEStd_NotSet, HYBRID,       FIXEDAUTO, NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT,   DFLT,  DFLT,   DFLT,      DFLT, DFLT, DFLT, REAL},   { 3, 2 },  { 0, 0 }, 8},
     { BOOTSTRAP_ITERATIVE, "22", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH, SMODSIZE,  DFLT,     8, SPARSE_ENCAPSULATED, DFLT, FMODSIZE, HEStd_NotSet, HYBRID,       FIXEDAUTO, NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT,   DFLT,  DFLT,   DFLT,      DFLT, DFLT, DFLT, COMPLEX},   { 3, 2 },  { 0, 0 }, 8},
@@ -393,7 +393,7 @@ class UTCKKSRNS_BOOT : public ::testing::TestWithParam<TEST_CASE_UTCKKSRNS_BOOT>
         double maxError = 0.;
         for (size_t i = 0; i < result.size(); ++i) {
             // double error = std::abs(result[i].real() - expectedResult[i].real()); // AA: this test will not work for complex!
-            double error = std::abs(result[i] - expectedResult[i]); // AA: this test will not work for complex!
+            double error = std::abs(result[i] - expectedResult[i]);  // AA: this test will not work for complex!
             if (maxError < error)
                 maxError = error;
         }
@@ -567,23 +567,11 @@ protected:
 
             CryptoContext<Element> cc(UnitTestGenerateContext(testData.params));
 
-            // const auto cryptoParamsCKKS =
-            //     std::dynamic_pointer_cast<CryptoParametersCKKSRNS>(
-            //         cc->GetCryptoParameters());
-            // std::cout << "\nScaling factors of levels: " << std::setprecision(20) << std::endl;
-            // for (uint32_t i = 0; i < MULT_DEPTH + 1; i++) {
-            //     std::cout << "Level " << i << ": "
-            //             << cryptoParamsCKKS->GetScalingFactorReal(i) << std::endl;
-            // }
-            // std::cout << "\n Moduli of levels" << std::endl;
-            // for (uint32_t i = 0; i < MULT_DEPTH + 1; i++) {
-            //     std::cout << "Tower " << i << ": " << cryptoParamsCKKS->GetElementParams()->GetParams()[i]->GetModulus().ConvertToDouble() << std::endl;
-            // }
-
-            cc->EvalBootstrapSetup(testData.levelBudget, testData.dim1, testData.slots, 0, true, StCFlag);
+            // For small ring dimensions like the ones tested, the correction factor for StC-first should be small, e.g., 10.
+            cc->EvalBootstrapSetup(testData.levelBudget, testData.dim1, testData.slots, (StCFlag) ? 10 : 0, true,
+                                   StCFlag);
 
             auto keyPair = cc->KeyGen();
-            cc->SetPrivateKey(keyPair.secretKey);
             cc->EvalBootstrapKeyGen(keyPair.secretKey, testData.slots);
             cc->EvalAtIndexKeyGen(keyPair.secretKey, {6});
             cc->EvalMultKeyGen(keyPair.secretKey);
@@ -592,11 +580,6 @@ protected:
             auto input(Fill({0.111111 + 0.999999i, 0.222222 - 0.888888i, 0.333333 + 0.777777i, 0.444444 - 0.666666i,
                              0.555555 + 0.555555i, 0.666666 - 0.444444i, 0.777777 + 0.333333i, 0.888888 - 0.222222i},
                             testData.slots));
-
-            // auto input(Fill({-0.024034938 + 0.i, 0.0023604636 + 0.i, 0.0019011264 + 0.i, 0.0020033208 + 0.i, -0.008256733 + 0.i, -0.024856087 + 0.i, -0.02064085 + 0.i, -0.014248725 + 0.i, 0.00094447611 + 0.i, 0.004367249 + 0.i, -0.0010716465 + 0.i, -0.015899997 + 0.i, -0.0094264157 + 0.i, -0.016898375 + 0.i, -0.0090470879 + 0.i, -0.016575955 + 0.i, 0.0044784121 + 0.i, -0.004020746 + 0.i, -0.0034423226 + 0.i, -0.0024260629 + 0.i, 0.0066782921 + 0.i, -0.0066972422 + 0.i, -0.017400773 + 0.i, -0.023793488 + 0.i, -0.0028974161 + 0.i, 0.0076833454 + 0.i, 0.0047845235 + 0.i, -0.0015907281 + 0.i, -0.0047467563 + 0.i, -0.0039078954 + 0.i, -0.0047174201 + 0.i, -0.0097378001 + 0.i},
-            //                 testData.slots));
-            // // AA: Bootstrapped version in the second iteration when the above is the error is much worse. It is not due to multiplying by 2^precision. Is it because of more accumulated noise when the ciphertext is the computed error?
-            // // BootstrappedError: (-0.012931886, 0.0021627338, 0.0026122062, -0.0046034282, -0.0024872657, -0.012638147, -0.020006642, -0.016432559, 0.0041501339, 0.0035808165, -0.0025509831, -0.006920347, -0.0033214231, -0.014532132, -0.0074519333, -0.013603171, -0.0015819369, -0.0039145811, -0.0070305511, -0.0043003006, 0.0025599579, -0.010764838, -0.009375052, -0.017319495, 0.0005627185, 0.0022903083, -0.001827431, 0.001163707, -0.0010385121, -0.0052666781, -0.0052722826, -0.017039858, ... ); Estimated precision: 27 bits
 
             size_t encodedLength = input.size();
 
@@ -631,13 +614,14 @@ protected:
             double precisionMultipleIterations =
                 CalculateApproximationError(actualResult, plaintext->GetCKKSPackedValue());
 
-            std::cerr << std::setprecision(14) << "actualResult = " << actualResult << std::setprecision(8) << std::endl;
+            std::cerr << std::setprecision(14) << "actualResult = " << actualResult << std::setprecision(8)
+                      << std::endl;
 
             std::cerr << "Initial precision = " << precision + precisionBuffer
                       << ", META-BTS used precision: " << precision
                       << ", precisionMultipleIterations = " << precisionMultipleIterations << std::endl;
 
-            double validPrecision = std::min(50., static_cast<double>(numIterations * precision)); // AA: It doesn't make sense to expect more than 50 bits of precision when the SF=59
+            double validPrecision = numIterations * precision;
             EXPECT_GE(precisionMultipleIterations + precisionBuffer, validPrecision);
 
             if (cc->GetCKKSDataType() == REAL) {

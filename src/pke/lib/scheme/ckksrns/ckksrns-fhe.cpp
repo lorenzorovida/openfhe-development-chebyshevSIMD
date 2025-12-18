@@ -473,13 +473,8 @@ Ciphertext<DCRTPoly> FHECKKSRNS::EvalBootstrap(ConstCiphertext<DCRTPoly>& cipher
         uint32_t powerOfTwoModulus = 1 << precision;
 
         // Step 3: Bootstrap the initial ciphertext.
-        auto ctInitialBootstrap = EvalBootstrap(ciphertext, numIterations - 1, precision);
+        auto ctInitialBootstrap = EvalBootstrap(ciphertext, numIterations - 1, 0);
         cc->GetScheme()->ModReduceInternalInPlace(ctInitialBootstrap, compositeDegree);
-
-        auto privateKey = cc->GetPrivateKey();
-        Plaintext resultError;
-        cc->Decrypt(privateKey, ctInitialBootstrap, &resultError);
-        std::cerr << "ctInitialBootstrap: " << resultError << std::endl;
 
         // Step 4: Scale up by powerOfTwoModulus.
         cc->GetScheme()->MultByIntegerInPlace(ctInitialBootstrap, powerOfTwoModulus);
@@ -492,16 +487,16 @@ Ciphertext<DCRTPoly> FHECKKSRNS::EvalBootstrap(ConstCiphertext<DCRTPoly>& cipher
         // Step 2: Scale up by powerOfTwoModulus, and extend the modulus to powerOfTwoModulus * q.
         // Note that we extend the modulus implicitly without any code calls because the value always stays 0.
         auto ctScaledUp = ciphertext->Clone();
+        if (st == FIXEDMANUAL) {
+            cc->GetScheme()->ModReduceInternalInPlace(ctScaledUp, ctScaledUp->GetNoiseScaleDeg() - 1);
+        }
         // We multiply by powerOfTwoModulus, and leave the last CRT value to be 0 (mod powerOfTwoModulus).
         cc->GetScheme()->MultByIntegerInPlace(ctScaledUp, powerOfTwoModulus);
-        ctScaledUp->SetLevel(L0 - ctScaledUp->GetElements()[0].GetNumOfElements());
 
         // Step 5: Mod-down to powerOfTwoModulus * q
         // We mod down, and leave the last CRT value to be 0 because it's divisible by powerOfTwoModulus.
         auto ctBootstrappedScaledDown = ctInitialBootstrap->Clone();
-
-        // TODO: YSP Can be removed for FLEXIBLE* scaling techniques as well as the closeness of 2^p to moduli is no longer needed
-        if (st != COMPOSITESCALINGAUTO && st != COMPOSITESCALINGMANUAL) {
+        if (st == FIXEDAUTO) {
             for (auto& cv : ctBootstrappedScaledDown->GetElements())
                 cv.DropLastElements(bootstrappingSizeQ - initSizeQ);
             ctBootstrappedScaledDown->SetLevel(L0 - ctBootstrappedScaledDown->GetElements()[0].GetNumOfElements());
@@ -509,24 +504,17 @@ Ciphertext<DCRTPoly> FHECKKSRNS::EvalBootstrap(ConstCiphertext<DCRTPoly>& cipher
 
         // Step 6 and 7: Calculate the bootstrapping error by subtracting the original ciphertext from the bootstrapped ciphertext. Mod down to q is done implicitly.
         auto ctBootstrappingError = cc->EvalSub(ctBootstrappedScaledDown, ctScaledUp);
-        cc->Decrypt(privateKey, ctBootstrappingError, &resultError);
-        std::cerr << " BootstrappingError: " << resultError << std::endl;
 
         // Step 8: Bootstrap the error.
         auto ctBootstrappedError = EvalBootstrap(ctBootstrappingError, 1, 0);
-        // cc->Decrypt(privateKey,  ctBootstrappedError, &resultError);
-        // std::cerr << " BootstrappedError before ModReduce: " << resultError << std::endl;
         cc->GetScheme()->ModReduceInternalInPlace(ctBootstrappedError, compositeDegree);
-        cc->Decrypt(privateKey,  ctBootstrappedError, &resultError);
-        std::cerr << " BootstrappedError: " << resultError << std::endl;
 
         // Step 9: Subtract the bootstrapped error from the initial bootstrap to get even lower error.
         auto finalCiphertext = cc->EvalSub(ctInitialBootstrap, ctBootstrappedError);
 
         // Step 10: Scale back down by powerOfTwoModulus to get the original message.
         cc->EvalMultInPlace(finalCiphertext, 1.0 / powerOfTwoModulus);
-        cc->Decrypt(privateKey, finalCiphertext, &resultError);
-        std::cerr << "finalCiphertext: " << resultError << std::endl;
+
         return finalCiphertext;
     }
 
@@ -576,7 +564,7 @@ Ciphertext<DCRTPoly> FHECKKSRNS::EvalBootstrap(ConstCiphertext<DCRTPoly>& cipher
     auto raised = ciphertext->Clone();
     auto algo   = cc->GetScheme();
     algo->ModReduceInternalInPlace(raised, compositeDegree * (raised->GetNoiseScaleDeg() - 1));
-    uint32_t lvl       = cryptoParams->GetScalingTechnique() != FLEXIBLEAUTOEXT ? 0 : 1;
+    uint32_t lvl = cryptoParams->GetScalingTechnique() != FLEXIBLEAUTOEXT ? 0 : 1;
     AdjustCiphertext(raised, std::pow(2, -static_cast<int32_t>(correction)), lvl);
 
     uint32_t N = cc->GetRingDimension();
@@ -887,69 +875,52 @@ Ciphertext<DCRTPoly> FHECKKSRNS::EvalBootstrapStCFirst(ConstCiphertext<DCRTPoly>
         uint32_t powerOfTwoModulus = 1 << precision;
 
         // Step 3: Bootstrap the initial ciphertext.
-        auto ctInitialBootstrap = EvalBootstrapStCFirst(ciphertext, numIterations - 1, precision);
+        auto ctInitialBootstrap = EvalBootstrapStCFirst(ciphertext, numIterations - 1, 0);
         cc->GetScheme()->ModReduceInternalInPlace(ctInitialBootstrap,
                                                   compositeDegree * (ctInitialBootstrap->GetNoiseScaleDeg() - 1));
-        std::cerr << "\n-------ScalingFactor ctInitialBootstrap: " << std::setprecision(20) << ctInitialBootstrap->GetScalingFactor() << " at (level, SF deg) = (" << ctInitialBootstrap->GetLevel() << ", " << ctInitialBootstrap->GetNoiseScaleDeg() << ") vs expected scaling factor " << cryptoParams->GetScalingFactorReal(ctInitialBootstrap->GetLevel()) << std::endl;
-        auto privateKey = cc->GetPrivateKey();
-        Plaintext resultError;
-        cc->Decrypt(privateKey, ctInitialBootstrap, &resultError);
-        std::cerr << "\nctInitialBootstrap: " << resultError << std::endl;
 
         // Step 4: Scale up by powerOfTwoModulus.
         cc->GetScheme()->MultByIntegerInPlace(ctInitialBootstrap, powerOfTwoModulus);
-        // cc->Decrypt(privateKey, ctInitialBootstrap, &resultError);
 
         // // If we start with more towers than we obtain from bootstrapping, return the original ciphertext.
         auto bootstrappingSizeQ = ctInitialBootstrap->GetElements()[0].GetNumOfElements();
-        // if (bootstrappingSizeQ <= initSizeQ)
-        //     return ciphertext->Clone();
+        if (bootstrappingSizeQ <= initSizeQ)
+            return ciphertext->Clone();
 
         // Step 2: Scale up by powerOfTwoModulus, and extend the modulus to powerOfTwoModulus * q.
         // Note that we extend the modulus implicitly without any code calls because the value always stays 0.
         auto ctScaledUp = ciphertext->Clone();
+        if (st == FIXEDMANUAL) {
+            cc->GetScheme()->ModReduceInternalInPlace(ctScaledUp, ctScaledUp->GetNoiseScaleDeg() - 1);
+        }
         // We multiply by powerOfTwoModulus, and leave the last CRT value to be 0 (mod powerOfTwoModulus).
         cc->GetScheme()->MultByIntegerInPlace(ctScaledUp, powerOfTwoModulus);
-        std::cerr << "\nScalingFactor ctScaledUp: " << std::setprecision(20) << ctScaledUp->GetScalingFactor() << " at (level, SF deg) = (" << ctScaledUp->GetLevel() << ", " << ctScaledUp->GetNoiseScaleDeg() << ") vs expected scaling factor " << cryptoParams->GetScalingFactorReal(ctScaledUp->GetLevel()) << std::endl;
-
-        ctScaledUp->SetLevel(L0 - ctScaledUp->GetElements()[0].GetNumOfElements()); // AA: Is this necessary?
-        std::cerr << "\nScalingFactor ctScaledUp after set level: " << std::setprecision(20) << ctScaledUp->GetScalingFactor() << " at (level, SF deg) = (" << ctScaledUp->GetLevel() << ", " << ctScaledUp->GetNoiseScaleDeg() << ") vs expected scaling factor " << cryptoParams->GetScalingFactorReal(ctScaledUp->GetLevel()) << std::endl;
 
         // Step 5: Mod-down to powerOfTwoModulus * q
         // We mod down, and leave the last CRT value to be 0 because it's divisible by powerOfTwoModulus.
         auto ctBootstrappedScaledDown = ctInitialBootstrap->Clone();
-        std::cerr << "\nScalingFactor ctBootstrappedScaledDown: " << std::setprecision(20) << ctBootstrappedScaledDown->GetScalingFactor() << " at (level, SF deg) = (" << ctBootstrappedScaledDown->GetLevel() << ", " << ctBootstrappedScaledDown->GetNoiseScaleDeg() << ") vs expected scaling factor " << cryptoParams->GetScalingFactorReal(ctBootstrappedScaledDown->GetLevel()) << std::endl;
 
-        // TODO: YSP Can be removed for FLEXIBLE* scaling techniques as well as the closeness of 2^p to moduli is no longer needed
-        // AA: We need to adjust scaling factor here before dropping the levels
-        if (st != COMPOSITESCALINGAUTO && st != COMPOSITESCALINGMANUAL) {
+        if (st == FIXEDAUTO) {
             for (auto& cv : ctBootstrappedScaledDown->GetElements())
                 cv.DropLastElements(bootstrappingSizeQ - initSizeQ);
             ctBootstrappedScaledDown->SetLevel(L0 - ctBootstrappedScaledDown->GetElements()[0].GetNumOfElements());
         }
-        std::cerr << "\nScalingFactor ctBootstrappedScaledDown after set level: " << std::setprecision(20) << ctBootstrappedScaledDown->GetScalingFactor() << " at (level, SF deg) = (" << ctBootstrappedScaledDown->GetLevel() << ", " << ctBootstrappedScaledDown->GetNoiseScaleDeg() << ") vs expected scaling factor " << cryptoParams->GetScalingFactorReal(ctBootstrappedScaledDown->GetLevel()) << std::endl;
 
         // Step 6 and 7: Calculate the bootstrapping error by subtracting the original ciphertext from the bootstrapped ciphertext. Mod down to q is done implicitly.
+        // cc->GetScheme()->AdjustLevelsAndDepthInPlace(ctBootstrappedScaledDown, ctScaledUp);
         auto ctBootstrappingError = cc->EvalSub(ctBootstrappedScaledDown, ctScaledUp);
-        cc->Decrypt(privateKey, ctBootstrappingError, &resultError);
-        std::cerr << "\nctBootstrappingError: " << resultError << std::endl;
 
         // Step 8: Bootstrap the error.
         auto ctBootstrappedError = EvalBootstrapStCFirst(ctBootstrappingError, 1, 0);
         cc->GetScheme()->ModReduceInternalInPlace(ctBootstrappedError,
                                                   compositeDegree * (ctBootstrappedError->GetNoiseScaleDeg() - 1));
-        cc->Decrypt(privateKey, ctBootstrappedError, &resultError);
-        std::cerr << "\nctBootstrappedError: " << resultError << std::endl;
 
         // Step 9: Subtract the bootstrapped error from the initial bootstrap to get even lower error.
         auto finalCiphertext = cc->EvalSub(ctInitialBootstrap, ctBootstrappedError);
 
-        std::cerr << "\nScalingFactor finalCiphertext: " << std::setprecision(20) << finalCiphertext->GetScalingFactor() << " at (level, SF deg) = (" << finalCiphertext->GetLevel() << ", " << finalCiphertext->GetNoiseScaleDeg() << ") vs expected scaling factor " << cryptoParams->GetScalingFactorReal(finalCiphertext->GetLevel()) << std::endl;
-
         // Step 10: Scale back down by powerOfTwoModulus to get the original message.
         cc->EvalMultInPlace(finalCiphertext, 1.0 / powerOfTwoModulus);
-        // cc->Decrypt(privateKey, finalCiphertext, &resultError);
-        // std::cerr << "\nfinalCiphertext: " << resultError << std::endl;
+
         return finalCiphertext;
     }
 
@@ -1031,24 +1002,40 @@ Ciphertext<DCRTPoly> FHECKKSRNS::EvalBootstrapStCFirst(ConstCiphertext<DCRTPoly>
     //------------------------------------------------------------------------------
     // Only work with the minimum number of required levels.
     auto ctxtDepleted = ciphertext->Clone();
-    std::cerr << "\nScalingFactor at beginning of BT: " << std::setprecision(20) << ctxtDepleted->GetScalingFactor() << " at (level, SF deg) = (" << ctxtDepleted->GetLevel() << ", " << ctxtDepleted->GetNoiseScaleDeg() << ") vs expected scaling factor " << cryptoParams->GetScalingFactorReal(ctxtDepleted->GetLevel()) << std::endl;
-    
-    algo->ModReduceInternalInPlace(ctxtDepleted, compositeDegree * (ctxtDepleted->GetNoiseScaleDeg() - 1));
-    std::cerr << "\nScalingFactor after MR: " << std::setprecision(20) << ctxtDepleted->GetScalingFactor() << " at (level, SF deg) = (" << ctxtDepleted->GetLevel() << ", " << ctxtDepleted->GetNoiseScaleDeg() << ") vs expected scaling factor " << cryptoParams->GetScalingFactorReal(ctxtDepleted->GetLevel()) << std::endl;
 
-    auto levelToReduce =
-        ctxtDepleted->GetElements()[0].GetNumOfElements() - p.m_paramsDec.lvlb - 2 - (st == FLEXIBLEAUTOEXT);
+    // AA: Revisit to clean up and fix for compositeScaling
+    auto expectedLevel = L0 - (p.m_paramsDec.lvlb + 2 + (st == FLEXIBLEAUTOEXT));
 
-    size_t sizeQl = ctxtDepleted->GetElements()[0].GetNumOfElements();
-
-    if (levelToReduce > 0 && levelToReduce * compositeDegree < sizeQl) {
-        cc->GetScheme()->LevelReduceInternalInPlace(ctxtDepleted, levelToReduce * compositeDegree);
-    }
-    else if (levelToReduce >= sizeQl) {
+    if (ctxtDepleted->GetLevel() + compositeDegree * (ctxtDepleted->GetNoiseScaleDeg() - 1) > expectedLevel) {
         OPENFHE_THROW("Not enough levels to perform Bootstrapping.");
     }
 
-    std::cerr << "\nScalingFactor before StC: " << std::setprecision(20) << ctxtDepleted->GetScalingFactor() << " at (level, SF deg) = (" << ctxtDepleted->GetLevel() << ", " << ctxtDepleted->GetNoiseScaleDeg() << ") vs expected scaling factor " << cryptoParams->GetScalingFactorReal(ctxtDepleted->GetLevel()) << std::endl;
+    algo->ModReduceInternalInPlace(ctxtDepleted, compositeDegree * (ctxtDepleted->GetNoiseScaleDeg() - 1));
+    auto ctxtLevel = ctxtDepleted->GetLevel();
+
+    if (st == FIXEDMANUAL || st == FIXEDAUTO) {
+        if (ctxtDepleted->GetLevel() < expectedLevel) {
+            cc->GetScheme()->LevelReduceInternalInPlace(ctxtDepleted, expectedLevel - ctxtDepleted->GetLevel());
+        }
+    }
+    else {
+        if (ctxtLevel < expectedLevel) {
+            double scf2  = ctxtDepleted->GetScalingFactor();
+            double scf1  = cryptoParams->GetScalingFactorRealBig(ctxtDepleted->GetLevel() - compositeDegree +
+                                                                 ctxtDepleted->GetNoiseScaleDeg() - 1);
+            double scf   = cryptoParams->GetScalingFactorReal(expectedLevel);
+            ctxtDepleted = cc->EvalMult(ctxtDepleted, scf1 / scf2 / scf);
+            if (ctxtDepleted->GetLevel() + compositeDegree * (ctxtDepleted->GetNoiseScaleDeg() - 1) < expectedLevel) {
+                cc->GetScheme()->LevelReduceInternalInPlace(
+                    ctxtDepleted, expectedLevel - ctxtLevel - compositeDegree * (ctxtDepleted->GetNoiseScaleDeg() - 1));
+            }
+            algo->ModReduceInternalInPlace(ctxtDepleted, compositeDegree * (ctxtDepleted->GetNoiseScaleDeg() - 1));
+            ctxtDepleted->SetScalingFactor(scf);
+        }
+        else {
+            algo->ModReduceInternalInPlace(ctxtDepleted, compositeDegree * (ctxtDepleted->GetNoiseScaleDeg() - 1));
+        }
+    }
 
     Ciphertext<DCRTPoly> ctxtEnc;
     //------------------------------------------------------------------------------
@@ -1085,12 +1072,8 @@ Ciphertext<DCRTPoly> FHECKKSRNS::EvalBootstrapStCFirst(ConstCiphertext<DCRTPoly>
     auto raised = ctxtDepleted->Clone();
     algo->ModReduceInternalInPlace(raised, compositeDegree * (raised->GetNoiseScaleDeg() - 1));
 
-    std::cerr << "\nScalingFactor after StC: " << std::setprecision(20) << raised->GetScalingFactor() << " at (level, SF deg) = (" << raised->GetLevel() << ", " << raised->GetNoiseScaleDeg() << ") vs expected scaling factor " << cryptoParams->GetScalingFactorReal(raised->GetLevel()) << std::endl;
-
-    uint32_t lvl       = cryptoParams->GetScalingTechnique() != FLEXIBLEAUTOEXT ? 0 : 1;
+    uint32_t lvl = cryptoParams->GetScalingTechnique() != FLEXIBLEAUTOEXT ? 0 : 1;
     AdjustCiphertext(raised, std::pow(2, -static_cast<int32_t>(correction)), lvl);
-
-    std::cerr << "\nScalingFactor after adjustment before raising: " << std::setprecision(20) << raised->GetScalingFactor() << " at (level, SF deg) = (" << raised->GetLevel() << ", " << raised->GetNoiseScaleDeg() << ") vs expected scaling factor " << cryptoParams->GetScalingFactorReal(raised->GetLevel()) << std::endl;
 
     if (compositeDegree > 1) {
         // RNS basis extension from level 0 RNS limbs to the raised RNS basis
@@ -1134,15 +1117,10 @@ Ciphertext<DCRTPoly> FHECKKSRNS::EvalBootstrapStCFirst(ConstCiphertext<DCRTPoly>
 #ifdef BOOTSTRAPTIMING
     std::cerr << "\nNumber of levels after mod raise: " << raised->GetElements()[0].GetNumOfElements() - 1 << std::endl;
 #endif
-
-    std::cerr << "\nScalingFactor after raising: " << raised->GetScalingFactor() << " at (level, SF deg) = (" << raised->GetLevel() << ", " << raised->GetNoiseScaleDeg() << ") expected scaling factor " << cryptoParams->GetScalingFactorReal(raised->GetLevel()) << std::endl;
     // AA: In FLEXIBLEAUTOEXT, it starts from (1,1) instead of (0,1)
-    
     double normalization = pre * (1.0 / (k * N));
     // Scaling adjustment before Coefficient to Slots
     cc->EvalMultInPlace(raised, normalization);
-
-    std::cerr << "\nScalingFactor after normalizing: " << raised->GetScalingFactor() << " at (level, SF deg) = (" << raised->GetLevel() << ", " << raised->GetNoiseScaleDeg() << ") expected scaling factor " << cryptoParams->GetScalingFactorReal(raised->GetLevel()) << std::endl;
 
     if (slots != N / 2) {
         //------------------------------------------------------------------------------
@@ -1166,8 +1144,6 @@ Ciphertext<DCRTPoly> FHECKKSRNS::EvalBootstrapStCFirst(ConstCiphertext<DCRTPoly>
     //------------------------------------------------------------------------------
 
     algo->ModReduceInternalInPlace(raised, compositeDegree);
-
-    std::cerr << "\nScalingFactor before CtS: " << raised->GetScalingFactor() << " at (level, SF deg) = (" << raised->GetLevel() << ", " << raised->GetNoiseScaleDeg() << ") expected scaling factor " << cryptoParams->GetScalingFactorReal(raised->GetLevel()) << std::endl << std::endl;
 
     ctxtEnc =
         (isLTBootstrap) ? EvalLinearTransform(p.m_U0hatTPre, raised) : EvalCoeffsToSlots(p.m_U0hatTPreFFT, raised);
@@ -2260,7 +2236,8 @@ uint32_t FHECKKSRNS::GetModDepthInternal(SecretKeyDist secretKeyDist) {
     return GetMultiplicativeDepthByCoeffVector(g_coefficientsSparse, false) + R_SPARSE;
 }
 
-void FHECKKSRNS::AdjustCiphertext(Ciphertext<DCRTPoly>& ciphertext, double correction, uint32_t lvl, bool modReduce) const {
+void FHECKKSRNS::AdjustCiphertext(Ciphertext<DCRTPoly>& ciphertext, double correction, uint32_t lvl,
+                                  bool modReduce) const {
     const auto cryptoParams = std::dynamic_pointer_cast<CryptoParametersCKKSRNS>(ciphertext->GetCryptoParameters());
 
     auto cc                  = ciphertext->GetCryptoContext();

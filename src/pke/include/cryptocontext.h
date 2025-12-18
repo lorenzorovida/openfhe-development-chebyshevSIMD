@@ -33,8 +33,6 @@
   Control for encryption operations
  */
 
-#define DEBUG_KEY
-
 #ifndef SRC_PKE_CRYPTOCONTEXT_H_
 #define SRC_PKE_CRYPTOCONTEXT_H_
 
