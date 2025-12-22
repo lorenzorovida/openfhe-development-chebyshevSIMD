@@ -39,27 +39,23 @@ Example for CKKS bootstrapping with full packing
 
 using namespace lbcrypto;
 
-void SimpleBootstrapExample(usint dcrtBits, usint ringDim, usint numSlots, ScalingTechnique rescaleTech);
-void SimpleBootstrapStCExample(usint dcrtBits, usint ringDim, usint numSlots, ScalingTechnique rescaleTech);
+void SimpleBootstrapExample();
+void SimpleBootstrapStCExample();
 
 int main(int argc, char* argv[]) {
-    uint32_t dcrtBits = 59;
-    uint32_t ringDim  = 1 << 7;
-    uint32_t numSlots = ringDim / 4;
-    // SimpleBootstrapExample(dcrtBits, ringDim, numSlots, FIXEDMANUAL);
-    // SimpleBootstrapStCExample(dcrtBits, ringDim, numSlots, FIXEDMANUAL);
-    // SimpleBootstrapExample(dcrtBits, ringDim, numSlots, FIXEDAUTO);
-    // SimpleBootstrapStCExample(dcrtBits, ringDim, numSlots, FIXEDAUTO);
-    // SimpleBootstrapExample(dcrtBits, ringDim, numSlots, FLEXIBLEAUTO);
-    // SimpleBootstrapStCExample(dcrtBits, ringDim, numSlots, FLEXIBLEAUTO);
-    SimpleBootstrapExample(dcrtBits, ringDim, numSlots, FLEXIBLEAUTOEXT);
-    SimpleBootstrapStCExample(dcrtBits, ringDim, numSlots, FLEXIBLEAUTOEXT);
+    SimpleBootstrapExample();
+    SimpleBootstrapStCExample();
 }
 
-void SimpleBootstrapExample(usint dcrtBits, usint ringDim, usint numSlots, ScalingTechnique rescaleTech) {
-    std::cerr << "*****SimpleBootstrapExample with dcrtBits = " << dcrtBits << ", ringDim = " << ringDim
-              << ", numSlots = " << numSlots << ", rescaleTech = " << rescaleTech << "*****" << std::endl;
-
+void SimpleBootstrapExample() {
+    /* The bootstrapping flavor demonstrated in this example has the following workflow:
+    * 1. Modulus Raising
+    * 2. Coefficients to Slots
+    * 3. Evaluate the Approximate Modular Reduction
+    * 4. Slots to Coefficients
+    * The number of levels required to be available before bootstrapping is 1 to support a multiplication
+    * (and one more for FLEXIBLEAUTOEXT).
+    */
     CCParams<CryptoContextCKKSRNS> parameters;
     // A. Specify main parameters
     /*  A1) Secret key distribution
@@ -81,8 +77,7 @@ void SimpleBootstrapExample(usint dcrtBits, usint ringDim, usint numSlots, Scali
     * you do not need to set the ring dimension.
     */
     parameters.SetSecurityLevel(HEStd_NotSet);
-    parameters.SetRingDim(ringDim);
-    // parameters.SetBatchSize(numSlots);
+    parameters.SetRingDim(1 << 12);
 
     /*  A3) Scaling parameters.
     * By default, we set the modulus sizes and rescaling technique to the following values
@@ -94,9 +89,9 @@ void SimpleBootstrapExample(usint dcrtBits, usint ringDim, usint numSlots, Scali
     uint32_t dcrtBits            = 78;
     uint32_t firstMod            = 89;
 #else
-    // ScalingTechnique rescaleTech = FIXEDMANUAL;
-    // uint32_t dcrtBits            = dcrtBits;
-    uint32_t firstMod = 60;
+    ScalingTechnique rescaleTech = FLEXIBLEAUTO;
+    uint32_t dcrtBits            = 59;
+    uint32_t firstMod            = 60;
 #endif
 
     parameters.SetScalingModSize(dcrtBits);
@@ -110,7 +105,7 @@ void SimpleBootstrapExample(usint dcrtBits, usint ringDim, usint numSlots, Scali
     * using GetBootstrapDepth, and add it to levelsAvailableAfterBootstrap to set our initial multiplicative
     * depth. We recommend using the input parameters below to get started.
     */
-    std::vector<uint32_t> levelBudget = {2, 2};
+    std::vector<uint32_t> levelBudget = {4, 4};
 
     // Note that the actual number of levels avalailable after bootstrapping before next bootstrapping
     // will be levelsAvailableAfterBootstrap - 1 because an additional level
@@ -127,7 +122,10 @@ void SimpleBootstrapExample(usint dcrtBits, usint ringDim, usint numSlots, Scali
     cryptoContext->Enable(ADVANCEDSHE);
     cryptoContext->Enable(FHE);
 
-    std::cout << "CKKS scheme is using ring dimension " << ringDim << " and depth " << depth << std::endl << std::endl;
+    uint32_t ringDim = cryptoContext->GetRingDimension();
+    // This is the maximum number of slots that can be used for full packing.
+    uint32_t numSlots = ringDim / 2;
+    std::cout << "CKKS scheme ring dimension: " << ringDim << "\n\n";
 
     cryptoContext->EvalBootstrapSetup(levelBudget, {0, 0}, numSlots);
 
@@ -135,36 +133,18 @@ void SimpleBootstrapExample(usint dcrtBits, usint ringDim, usint numSlots, Scali
     cryptoContext->EvalMultKeyGen(keyPair.secretKey);
     cryptoContext->EvalBootstrapKeyGen(keyPair.secretKey, numSlots);
 
-    std::vector<double> x = {-4.0, -3.0, -2.0, -1.0, -0.75, -0.5, -0.25, 0, 0.25, 0.5, 0.75, 1.0, 2.0, 3.0, 4.0, 5.0};
-    // std::vector<double> x = {-40, -30, -20, -10, -75, -5, -25, 0, 25, 5, 75, 10, 20, 30, 40, 50};
-
-    if (x.size() < numSlots)
-        x = Fill<double>(x, numSlots);
-
-    // std::vector<double> x;
-    // std::random_device rd;
-    // std::mt19937 gen(rd());
-    // std::uniform_real_distribution<> dis(0.0, 1.0);
-    // for (size_t i = 0; i < numSlots; i++) {
-    //     x.push_back(dis(gen));
-    // }
-    size_t encodedLength = x.size();
+    std::vector<double> x = {0.25, 0.5, 0.75, 1.0, 2.0, 3.0, 4.0, 5.0};
+    size_t encodedLength  = x.size();
 
     // We start with a depleted ciphertext that has used up all of its levels.
-    Plaintext ptxt = cryptoContext->MakeCKKSPackedPlaintext(x, 1, depth - 1, nullptr, numSlots);
+    Plaintext ptxt = cryptoContext->MakeCKKSPackedPlaintext(x, 1, depth - 1);
 
     ptxt->SetLength(encodedLength);
-    // std::cout << "Input: " << ptxt << "\n";
-
-    std::cerr << "First numSlots elements of the input: [";
-    std::copy_n(x.begin(), numSlots, std::ostream_iterator<double>(std::cerr, " "));
-    std::cerr << "]" << std::endl;
+    std::cout << "Input: " << ptxt << "\n";
 
     Ciphertext<DCRTPoly> ciph = cryptoContext->Encrypt(keyPair.publicKey, ptxt);
 
     std::cout << "Initial number of levels remaining: " << depth - ciph->GetLevel() << "\n\n";
-    std::cerr << "Number of levels consumed by initial ciphertext: " << ciph->GetLevel()
-              << ", and noise scale degree: " << ciph->GetNoiseScaleDeg() << std::endl;
 
     // auto start = std::chrono::high_resolution_clock::now();
 
@@ -181,31 +161,21 @@ void SimpleBootstrapExample(usint dcrtBits, usint ringDim, usint numSlots, Scali
     Plaintext result;
     cryptoContext->Decrypt(keyPair.secretKey, ciphertextAfter, &result);
     result->SetLength(encodedLength);
-    // std::cout << "Output after bootstrapping: " << result << "\n";
-
-    auto precision = result->GetRealPackedValue();
-
-    std::cerr << "First numSlots elements of the output: [";
-    std::copy_n(precision.begin(), numSlots, std::ostream_iterator<double>(std::cerr, " "));
-    std::cerr << "]" << std::endl;
-
-    std::transform(precision.begin(), precision.end(), x.begin(), precision.begin(), std::minus<double>());
-    std::transform(precision.begin(), precision.end(), precision.begin(),
-                   [&](const double& elem) { return std::floor(-log2(std::abs(elem))); });
-    auto max_prec_it = std::max_element(precision.begin(), precision.end());
-    auto min_prec_it = std::min_element(precision.begin(), precision.end());
-    // std::cerr << "Decrypted precision: " << precision << "; max = " << *max_prec_it << ", min = " << *min_prec_it << std::endl << std::endl;
-    std::cerr << "First numSlots elements of the decrypted precision: [";
-    std::copy_n(precision.begin(), numSlots, std::ostream_iterator<double>(std::cerr, " "));
-    std::cerr << "]; max = " << *max_prec_it << ", min = " << *min_prec_it << std::endl << std::endl;
+    std::cout << "Output after bootstrapping: " << result << "\n";
 
     cryptoContext->ClearStaticMapsAndVectors();
 }
 
-void SimpleBootstrapStCExample(usint dcrtBits, usint ringDim, usint numSlots, ScalingTechnique rescaleTech) {
-    std::cerr << "*****SimpleBootstrapStCExample with dcrtBits = " << dcrtBits << ", ringDim = " << ringDim
-              << ", numSlots = " << numSlots << ", rescaleTech = " << rescaleTech << "*****" << std::endl;
-
+void SimpleBootstrapStCExample() {
+    /* The bootstrapping flavor demonstrated in this example has the following workflow:
+    * 1. Slots to Coefficients
+    * 2. Modulus Raising
+    * 3. Coefficients to Slots
+    * 4. Evaluate the Approximate Modular Reduction
+    * The number of levels required to be available before bootstrapping is the number of levels for
+    * the Slots To Coefficients transformation plus 1 to support a multiplication
+    * (and one more for FLEXIBLEAUTOEXT).
+    */
     CCParams<CryptoContextCKKSRNS> parameters;
     // A. Specify main parameters
     /*  A1) Secret key distribution
@@ -227,8 +197,7 @@ void SimpleBootstrapStCExample(usint dcrtBits, usint ringDim, usint numSlots, Sc
     * you do not need to set the ring dimension.
     */
     parameters.SetSecurityLevel(HEStd_NotSet);
-    parameters.SetRingDim(ringDim);
-    // parameters.SetBatchSize(numSlots);
+    parameters.SetRingDim(1 << 12);
 
     /*  A3) Scaling parameters.
     * By default, we set the modulus sizes and rescaling technique to the following values
@@ -240,9 +209,9 @@ void SimpleBootstrapStCExample(usint dcrtBits, usint ringDim, usint numSlots, Sc
     usint dcrtBits               = 78;
     usint firstMod               = 89;
 #else
-    // ScalingTechnique rescaleTech = FIXEDMANUAL;
-    // usint dcrtBits               = dcrtBits;
-    usint firstMod = 60;
+    ScalingTechnique rescaleTech = FLEXIBLEAUTO;
+    usint dcrtBits               = 59;
+    usint firstMod               = 60;
 #endif
 
     parameters.SetScalingModSize(dcrtBits);
@@ -256,7 +225,7 @@ void SimpleBootstrapStCExample(usint dcrtBits, usint ringDim, usint numSlots, Sc
     * using GetBootstrapDepth, and add it to levelsAvailableAfterBootstrap to set our initial multiplicative
     * depth. We recommend using the input parameters below to get started.
     */
-    std::vector<uint32_t> levelBudget = {2, 2};
+    std::vector<uint32_t> levelBudget = {4, 4};
 
     // Note that the actual number of levels avalailable after bootstrapping before next bootstrapping
     // will be levelsAvailableAfterBootstrap - levelBudget[1] - 1 = 9 below because we perform SlotsToCoefficients
@@ -273,7 +242,10 @@ void SimpleBootstrapStCExample(usint dcrtBits, usint ringDim, usint numSlots, Sc
     cryptoContext->Enable(ADVANCEDSHE);
     cryptoContext->Enable(FHE);
 
-    std::cout << "CKKS scheme is using ring dimension " << ringDim << " and depth " << depth << std::endl << std::endl;
+    uint32_t ringDim = cryptoContext->GetRingDimension();
+    // This is the maximum number of slots that can be used for full packing.
+    uint32_t numSlots = ringDim / 2;
+    std::cout << "CKKS scheme ring dimension: " << ringDim << "\n\n";
 
     cryptoContext->EvalBootstrapSetup(levelBudget, {0, 0}, numSlots, 0, true, true);
 
@@ -281,64 +253,36 @@ void SimpleBootstrapStCExample(usint dcrtBits, usint ringDim, usint numSlots, Sc
     cryptoContext->EvalMultKeyGen(keyPair.secretKey);
     cryptoContext->EvalBootstrapKeyGen(keyPair.secretKey, numSlots);
 
-    std::vector<double> x = {-4.0, -3.0, -2.0, -1.0, -0.75, -0.5, -0.25, 0, 0.25, 0.5, 0.75, 1.0, 2.0, 3.0, 4.0, 5.0};
-    // std::vector<double> x = {-40, -30, -20, -10, -75, -5, -25, 0, 25, 5, 75, 10, 20, 30, 40, 50};
-    if (x.size() < numSlots)
-        x = Fill<double>(x, numSlots);
-    size_t encodedLength = x.size();
+    std::vector<double> x = {0.25, 0.5, 0.75, 1.0, 2.0, 3.0, 4.0, 5.0};
+    size_t encodedLength  = x.size();
 
     // We start with a depleted ciphertext that has used up all of its levels, but which still
     // has sufficient levels to perform the SlotsToCoefficients operation.
     Plaintext ptxt = cryptoContext->MakeCKKSPackedPlaintext(x, 1, depth - 1 - levelBudget[1], nullptr, numSlots);
-    // Plaintext ptxt = cryptoContext->MakeCKKSPackedPlaintext(
-    //     x, 1, depth - 2 - levelBudget[1]); // Subtract and extra level to allow one multiplication before bootstrapping
 
     ptxt->SetLength(encodedLength);
-    // std::cout << "Input: " << ptxt << std::endl;
-    std::cerr << "First numSlots elements of the output: [";
-    std::copy_n(x.begin(), numSlots, std::ostream_iterator<double>(std::cerr, " "));
-    std::cerr << "]" << std::endl;
+    std::cout << "Input: " << ptxt << std::endl;
 
     Ciphertext<DCRTPoly> ciph = cryptoContext->Encrypt(keyPair.publicKey, ptxt);
 
-    std::cout << "Initial number of levels remaining: " << depth - ciph->GetLevel() << " and total depth: " << depth
-              << std::endl;
-    std::cerr << "Number of levels consumed by initial ciphertext: " << ciph->GetLevel()
-              << ", and noise scale degree: " << ciph->GetNoiseScaleDeg() << std::endl;
+    std::cout << "Initial number of levels remaining: " << depth - ciph->GetLevel() << "\n\n";
 
-    // ciph = cryptoContext->EvalMult(ciph, ciph);
-    // // cryptoContext->ModReduceInPlace(ciph);
-    // std::cerr << "Number of levels consumed by ciphertext after multiplication: " << ciph->GetLevel()
-    //           << ", and noise scale degree: " << ciph->GetNoiseScaleDeg() << std::endl;
+    // auto start = std::chrono::high_resolution_clock::now();
 
     // Perform the bootstrapping operation. The goal is to increase the number of levels remaining
     // for HE computation.
     auto ciphertextAfter = cryptoContext->EvalBootstrap(ciph);
 
+    // auto stop = std::chrono::high_resolution_clock::now();
+    // std::cout << "Bootstrapping time: " << std::chrono::duration<double>(stop - start).count() << " s\n\n";
+
     std::cout << "Number of levels remaining after bootstrapping: "
               << depth - ciphertextAfter->GetLevel() - (ciphertextAfter->GetNoiseScaleDeg() - 1) << "\n\n";
-    std::cerr << "Number of levels consumed by ciphertext after bootstrapping: " << ciphertextAfter->GetLevel()
-              << ", and noise scale degree: " << ciphertextAfter->GetNoiseScaleDeg() << std::endl;
 
     Plaintext result;
     cryptoContext->Decrypt(keyPair.secretKey, ciphertextAfter, &result);
     result->SetLength(encodedLength);
-    // std::cout << "Output after bootstrapping: " << result << "\n";
-
-    auto precision = result->GetRealPackedValue();
-    std::cerr << "First numSlots elements of the output: [";
-    std::copy_n(precision.begin(), numSlots, std::ostream_iterator<double>(std::cerr, " "));
-    std::cerr << "]" << std::endl;
-
-    std::transform(precision.begin(), precision.end(), x.begin(), precision.begin(), std::minus<double>());
-    std::transform(precision.begin(), precision.end(), precision.begin(),
-                   [&](const double& elem) { return std::floor(-log2(std::abs(elem))); });
-    auto max_prec_it = std::max_element(precision.begin(), precision.end());
-    auto min_prec_it = std::min_element(precision.begin(), precision.end());
-    // std::cerr << "Decrypted precision: " << precision << "; max = " << *max_prec_it << ", min = " << *min_prec_it << std::endl << std::endl;
-    std::cerr << "First numSlots elements of the decrypted precision: [";
-    std::copy_n(precision.begin(), numSlots, std::ostream_iterator<double>(std::cerr, " "));
-    std::cerr << "]; max = " << *max_prec_it << ", min = " << *min_prec_it << std::endl << std::endl;
+    std::cout << "Output after bootstrapping: " << result << "\n";
 
     cryptoContext->ClearStaticMapsAndVectors();
 }

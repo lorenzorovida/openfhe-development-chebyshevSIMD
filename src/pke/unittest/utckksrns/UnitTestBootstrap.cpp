@@ -393,13 +393,10 @@ class UTCKKSRNS_BOOT : public ::testing::TestWithParam<TEST_CASE_UTCKKSRNS_BOOT>
         double maxError = 0.;
         for (size_t i = 0; i < result.size(); ++i) {
             // double error = std::abs(result[i].real() - expectedResult[i].real()); // AA: this test will not work for complex!
-            double error = std::abs(result[i] - expectedResult[i]);  // AA: this test will not work for complex!
+            double error = std::abs(result[i] - expectedResult[i]);
             if (maxError < error)
                 maxError = error;
         }
-
-        std::cerr << "\n***maxError = " << maxError << std::endl << std::endl;
-
         return std::abs(std::log2(maxError));
     }
 
@@ -563,8 +560,6 @@ protected:
     void UnitTest_Bootstrap_Iterative(const TEST_CASE_UTCKKSRNS_BOOT& testData, const bool StCFlag,
                                       const std::string& failmsg = std::string()) {
         try {
-            std::cerr << "\n\n---------StCFlag: " << StCFlag << std::endl << std::endl;
-
             CryptoContext<Element> cc(UnitTestGenerateContext(testData.params));
 
             // For small ring dimensions like the ones tested, the correction factor for StC-first should be small, e.g., 10.
@@ -594,8 +589,6 @@ protected:
             uint32_t precision =
                 std::floor(CalculateApproximationError(result->GetCKKSPackedValue(), plaintext->GetCKKSPackedValue()));
 
-            std::cerr << std::setprecision(14) << "initialResult = " << result << std::setprecision(8) << std::endl;
-
             // Give buffer for precision to be lower than one measured result.
             const double precisionBuffer = 5;
             precision -= precisionBuffer;
@@ -613,9 +606,6 @@ protected:
                               ((StCFlag) ? "StC-first" : "ModRaise-first") + " version.");
             double precisionMultipleIterations =
                 CalculateApproximationError(actualResult, plaintext->GetCKKSPackedValue());
-
-            std::cerr << std::setprecision(14) << "actualResult = " << actualResult << std::setprecision(8)
-                      << std::endl;
 
             std::cerr << "Initial precision = " << precision + precisionBuffer
                       << ", META-BTS used precision: " << precision

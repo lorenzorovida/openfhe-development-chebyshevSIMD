@@ -77,7 +77,7 @@ int main(int argc, char* argv[]) {
             for (size_t i = 0; i < numIterations; i++) {
                 // // precision += MeasureBootstrapPrecision(numSlots, correctionFactor);
                 // precision += MeasureStCFirstBootstrapPrecision(numSlots, correctionFactor);
-                // auto precisionVec += MeasureBootstrapDoubleIterPrecision(numSlots, correctionFactor);
+                // auto precisionVec = MeasureBootstrapDoubleIterPrecision(numSlots, correctionFactor);
                 auto precisionVec = MeasureStCFirstBootstrapDoubleIterPrecision(numSlots, correctionFactor);
                 precision += precisionVec[0];
                 precision2 += precisionVec[1];
@@ -231,7 +231,7 @@ std::vector<double> MeasureBootstrapDoubleIterPrecision(uint32_t numSlots, uint3
     parameters.SetSecurityLevel(HEStd_NotSet);
     parameters.SetRingDim(1 << 12);
 
-    ScalingTechnique rescaleTech = FLEXIBLEAUTOEXT;
+    ScalingTechnique rescaleTech = FIXEDMANUAL;
     usint dcrtBits               = 59;
     usint firstMod               = 60;
     parameters.SetScalingModSize(dcrtBits);
@@ -310,7 +310,7 @@ std::vector<double> MeasureStCFirstBootstrapDoubleIterPrecision(uint32_t numSlot
     parameters.SetSecurityLevel(HEStd_NotSet);
     parameters.SetRingDim(1 << 12);
 
-    ScalingTechnique rescaleTech = FLEXIBLEAUTOEXT;
+    ScalingTechnique rescaleTech = FIXEDMANUAL;
     usint dcrtBits               = 59;
     usint firstMod               = 60;
     parameters.SetScalingModSize(dcrtBits);

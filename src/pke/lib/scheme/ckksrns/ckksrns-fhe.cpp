@@ -1117,7 +1117,6 @@ Ciphertext<DCRTPoly> FHECKKSRNS::EvalBootstrapStCFirst(ConstCiphertext<DCRTPoly>
 #ifdef BOOTSTRAPTIMING
     std::cerr << "\nNumber of levels after mod raise: " << raised->GetElements()[0].GetNumOfElements() - 1 << std::endl;
 #endif
-    // AA: In FLEXIBLEAUTOEXT, it starts from (1,1) instead of (0,1)
     double normalization = pre * (1.0 / (k * N));
     // Scaling adjustment before Coefficient to Slots
     cc->EvalMultInPlace(raised, normalization);
@@ -2213,11 +2212,8 @@ uint32_t FHECKKSRNS::GetBootstrapDepth(uint32_t approxModDepth, const std::vecto
 
 uint32_t FHECKKSRNS::GetBootstrapDepth(const std::vector<uint32_t>& levelBudget, SecretKeyDist secretKeyDist) {
     uint32_t approxModDepth = GetModDepthInternal(secretKeyDist);
-    // AA: where are the scalings by double constants captured? Not all are merged with encoding and decoding
-    // One correction is performed before ModRaise, so it is not visible here and we assume the user accounts for this is levelsAfterBootstrap.
-    // In StCFirst, we currently specify with how many levels we start and we want to remain, and those contain
-    // levelBudget[1] + 1, and specify {levelBudget[0], 0} as the input to this function.
-    // Do we want to change this?
+    // AA: note that the scalings by double constants are not captured here.
+    // One extra level is consumed before ModRaise (correction factor), and another is consumed after ModRaise (normalization).
     return approxModDepth + levelBudget[0] + levelBudget[1];
 }
 
@@ -3055,7 +3051,7 @@ std::shared_ptr<seriesPowers<DCRTPoly>> FHECKKSRNS::EvalMVBPrecomputeInternal(
     algo->ModReduceInternalInPlace(raised, raised->GetNoiseScaleDeg() - 1);
 
     // If correction ~ 1, we should not do this adjustment and save a level
-    // AA: make the check more granular
+    // AA: make the check more granular (around 1.0000x?)
     if (std::llround(correction) != 1.0)
         AdjustCiphertextFBT(raised, correction);
 
