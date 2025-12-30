@@ -616,6 +616,7 @@ TEST_P(UTCKKSRNSCS_BOOT, CKKSRNS) {
         case BOOTSTRAP_EDGE:
         case BOOTSTRAP_SPARSE:
             UnitTest_Bootstrap(test, false, test.buildTestName());
+            // TODO: enable following test once STC Composite Scaling operational
             // UnitTest_Bootstrap(test, true, test.buildTestName());
             break;
         case BOOTSTRAP_KEY_SWITCH:

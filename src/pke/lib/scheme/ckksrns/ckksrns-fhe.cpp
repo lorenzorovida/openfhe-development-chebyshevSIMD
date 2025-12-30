@@ -106,15 +106,15 @@ void FHECKKSRNS::EvalBootstrapSetup(const CryptoContextImpl<DCRTPoly>& cc, std::
             // The spreadsheet with our experiments is here:
             // https://docs.google.com/spreadsheets/d/1WqmwBUMNGlX6Uvs9qLXt5yeddtCyWPP55BbJPu5iPAM/edit?usp=sharing
             // AA: update spreadsheet
-            uint32_t tmp       = (BTSlotsEncoding == false) ?
-                                     std::round(-0.265 * (2 * std::log2(M / 2) + std::log2(slots)) + 19.1) :
-                                     std::round(-0.1887 * (2 * std::log2(M / 2) + std::log2(slots)) + 18.763);
+            uint32_t tmp       = BTSlotsEncoding ?
+                                     std::round(-0.1887 * (2 * std::log2(M / 2) + std::log2(slots)) + 18.763) :
+                                     std::round(-0.265 * (2 * std::log2(M / 2) + std::log2(slots)) + 19.1);
             m_correctionFactor = std::clamp<uint32_t>(tmp, 7, 14);
         }
         else {
-            uint32_t tmp       = (BTSlotsEncoding == false) ?
-                                     std::round(-0.1871 * (2 * std::log2(M / 2) + std::log2(slots)) + 14.829) :
-                                     std::round(-0.108 * (2 * std::log2(M / 2) + std::log2(slots)) + 14.069);
+            uint32_t tmp       = BTSlotsEncoding ?
+                                     std::round(-0.108 * (2 * std::log2(M / 2) + std::log2(slots)) + 14.069) :
+                                     std::round(-0.1871 * (2 * std::log2(M / 2) + std::log2(slots)) + 14.829);
             m_correctionFactor = std::clamp<uint32_t>(tmp, 6, 13);
         }
     }
@@ -123,7 +123,6 @@ void FHECKKSRNS::EvalBootstrapSetup(const CryptoContextImpl<DCRTPoly>& cc, std::
     }
 
     m_bootPrecomMap[slots] = std::make_shared<CKKSBootstrapPrecom>();
-
     auto& precom            = m_bootPrecomMap[slots];
     precom->m_slots         = slots;
     precom->BTSlotsEncoding = BTSlotsEncoding;
@@ -209,14 +208,13 @@ void FHECKKSRNS::EvalBootstrapSetup(const CryptoContextImpl<DCRTPoly>& cc, std::
 
         uint32_t lEnc = L0 - compositeDegree * (precom->m_paramsEnc.lvlb + 1);
         uint32_t lDec;
-
-        if (!precom->BTSlotsEncoding) {
+        if (precom->BTSlotsEncoding) {
+            lDec = (2 + (st == FLEXIBLEAUTOEXT)) * compositeDegree;
+        }
+        else {
             uint32_t depthBT = GetModDepthInternal(cryptoParams->GetSecretKeyDist()) + precom->m_paramsEnc.lvlb +
                                precom->m_paramsDec.lvlb;
             lDec = L0 - compositeDegree * depthBT;
-        }
-        else {
-            lDec = (2 + (st == FLEXIBLEAUTOEXT)) * compositeDegree;
         }
 
         bool isLTBootstrap = (precom->m_paramsEnc.lvlb == 1) && (precom->m_paramsDec.lvlb == 1);
@@ -235,7 +233,7 @@ void FHECKKSRNS::EvalBootstrapSetup(const CryptoContextImpl<DCRTPoly>& cc, std::
                         U1hatT[j][i] = std::conj(U1[i][j]);
                     }
                 }
-                if (cc.GetCKKSDataType() == REAL || precom->BTSlotsEncoding == false) {
+                if (cc.GetCKKSDataType() == REAL || !precom->BTSlotsEncoding) {
                     precom->m_U0Pre     = EvalLinearTransformPrecompute(cc, U0, U1, 1, scaleDec, lDec);
                     precom->m_U0hatTPre = EvalLinearTransformPrecompute(cc, U0hatT, U1hatT, 0, scaleEnc, lEnc);
                 }
@@ -258,7 +256,7 @@ void FHECKKSRNS::EvalBootstrapSetup(const CryptoContextImpl<DCRTPoly>& cc, std::
             }
         }
         else {
-            bool flagPack      = (cc.GetCKKSDataType() == REAL || precom->BTSlotsEncoding == false) ? false : true;
+            bool flagPack      = !(cc.GetCKKSDataType() == REAL || !precom->BTSlotsEncoding);
             precom->m_U0PreFFT = EvalSlotsToCoeffsPrecompute(cc, ksiPows, rotGroup, false, scaleDec, lDec, flagPack);
             precom->m_U0hatTPreFFT =
                 EvalCoeffsToSlotsPrecompute(cc, ksiPows, rotGroup, false, scaleEnc, lEnc, flagPack);
@@ -376,14 +374,13 @@ void FHECKKSRNS::EvalBootstrapPrecompute(const CryptoContextImpl<DCRTPoly>& cc, 
 
     uint32_t lEnc = L0 - compositeDegree * (p.m_paramsEnc.lvlb + 1);
     uint32_t lDec;
-
-    if (!p.BTSlotsEncoding) {
+    if (p.BTSlotsEncoding) {
+        lDec = (2 + (st == FLEXIBLEAUTOEXT)) * compositeDegree;
+    }
+    else {
         uint32_t depthBT =
             GetModDepthInternal(cryptoParams->GetSecretKeyDist()) + p.m_paramsEnc.lvlb + p.m_paramsDec.lvlb;
         lDec = L0 - compositeDegree * depthBT;
-    }
-    else {
-        lDec = (2 + (st == FLEXIBLEAUTOEXT)) * compositeDegree;
     }
 
     bool isLTBootstrap = (p.m_paramsEnc.lvlb == 1) && (p.m_paramsDec.lvlb == 1);
@@ -426,7 +423,7 @@ void FHECKKSRNS::EvalBootstrapPrecompute(const CryptoContextImpl<DCRTPoly>& cc, 
         }
     }
     else {
-        bool flagPack    = (cc.GetCKKSDataType() == REAL || p.BTSlotsEncoding == false) ? false : true;
+        bool flagPack    = !(cc.GetCKKSDataType() == REAL || !p.BTSlotsEncoding);
         p.m_U0PreFFT     = EvalSlotsToCoeffsPrecompute(cc, ksiPows, rotGroup, false, scaleDec, lDec, flagPack);
         p.m_U0hatTPreFFT = EvalCoeffsToSlotsPrecompute(cc, ksiPows, rotGroup, false, scaleEnc, lEnc, flagPack);
     }
@@ -1071,7 +1068,6 @@ Ciphertext<DCRTPoly> FHECKKSRNS::EvalBootstrapStCFirst(ConstCiphertext<DCRTPoly>
 
     auto raised = ctxtDepleted->Clone();
     algo->ModReduceInternalInPlace(raised, compositeDegree * (raised->GetNoiseScaleDeg() - 1));
-
     uint32_t lvl = cryptoParams->GetScalingTechnique() != FLEXIBLEAUTOEXT ? 0 : 1;
     AdjustCiphertext(raised, std::pow(2, -static_cast<int32_t>(correction)), lvl);
 

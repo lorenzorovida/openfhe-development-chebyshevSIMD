@@ -392,7 +392,6 @@ class UTCKKSRNS_BOOT : public ::testing::TestWithParam<TEST_CASE_UTCKKSRNS_BOOT>
         // using the infinity norm
         double maxError = 0.;
         for (size_t i = 0; i < result.size(); ++i) {
-            // double error = std::abs(result[i].real() - expectedResult[i].real()); // AA: this test will not work for complex!
             double error = std::abs(result[i] - expectedResult[i]);
             if (maxError < error)
                 maxError = error;
@@ -531,8 +530,8 @@ protected:
             ciphertext   = cc->Encrypt(keyPair.publicKey, plaintext_a);
             firstCurrent = ciphertext->GetElements()[0];
             // Find the automorphism index that corresponds to rotation index index.
-            usint autoIndex = FindAutomorphismIndex2nComplex(1, 4096);
-            std::vector<usint> map(4096 / 2);
+            uint32_t autoIndex = FindAutomorphismIndex2nComplex(1, 4096);
+            std::vector<uint32_t> map(4096 / 2);
             PrecomputeAutoMap(4096 / 2, autoIndex, &map);
             firstCurrent = firstCurrent.AutomorphismTransform(autoIndex, map);
             digits       = cc->EvalFastRotationPrecompute(ciphertext);
@@ -607,9 +606,9 @@ protected:
             double precisionMultipleIterations =
                 CalculateApproximationError(actualResult, plaintext->GetCKKSPackedValue());
 
-            std::cerr << "Initial precision = " << precision + precisionBuffer
-                      << ", META-BTS used precision: " << precision
-                      << ", precisionMultipleIterations = " << precisionMultipleIterations << std::endl;
+            // std::cerr << "Initial precision = " << precision + precisionBuffer
+            //           << ", META-BTS used precision: " << precision
+            //           << ", precisionMultipleIterations = " << precisionMultipleIterations << std::endl;
 
             double validPrecision = numIterations * precision;
             EXPECT_GE(precisionMultipleIterations + precisionBuffer, validPrecision);

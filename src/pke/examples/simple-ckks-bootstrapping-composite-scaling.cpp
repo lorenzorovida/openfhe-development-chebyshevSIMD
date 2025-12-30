@@ -35,12 +35,10 @@ Example for CKKS bootstrapping with full packing
 
 */
 
-#define PROFILE
-
 #include "openfhe.h"
 
+#include <ostream>
 #include <vector>
-#include <iostream>
 
 using namespace lbcrypto;
 
@@ -49,7 +47,8 @@ void SimpleBootstrapStCFirstExample();
 
 int main(int argc, char* argv[]) {
     SimpleBootstrapExample();
-    SimpleBootstrapStCFirstExample();
+    // TODO: enable following once STC Composite Scaling operational
+    // SimpleBootstrapStCFirstExample();
 }
 
 // CalculateApproximationError() calculates the precision number (or approximation error).
@@ -100,8 +99,8 @@ void SimpleBootstrapExample() {
     * below unless you are an FHE expert.
     */
     ScalingTechnique rescaleTech = COMPOSITESCALINGAUTO;
-    usint dcrtBits               = 98;
-    usint firstMod               = 100;
+    uint32_t dcrtBits               = 98;
+    uint32_t firstMod               = 100;
 
     parameters.SetScalingModSize(dcrtBits);
     parameters.SetScalingTechnique(rescaleTech);
@@ -110,7 +109,7 @@ void SimpleBootstrapExample() {
     parameters.SetSecurityLevel(HEStd_NotSet);
     parameters.SetRingDim(1 << 12);
 
-    usint registerWordSize = 64;
+    uint32_t registerWordSize = 64;
     parameters.SetRegisterWordSize(registerWordSize);
 
     /*  A4) Multiplicative depth.
@@ -126,7 +125,7 @@ void SimpleBootstrapExample() {
     // will be levelsAvailableAfterBootstrap - 1 because an additional level
     // is used for scaling the ciphertext before next bootstrapping (in 64-bit CKKS bootstrapping)
     uint32_t levelsAvailableAfterBootstrap = 10;
-    usint depth = levelsAvailableAfterBootstrap + FHECKKSRNS::GetBootstrapDepth(levelBudget, secretKeyDist);
+    uint32_t depth = levelsAvailableAfterBootstrap + FHECKKSRNS::GetBootstrapDepth(levelBudget, secretKeyDist);
     parameters.SetMultiplicativeDepth(depth);
 
     // std::cout << "approxBootstrapDepth = " << approxBootstrapDepth << std::endl;
@@ -143,9 +142,9 @@ void SimpleBootstrapExample() {
     cryptoContext->Enable(ADVANCEDSHE);
     cryptoContext->Enable(FHE);
 
-    usint ringDim = cryptoContext->GetRingDimension();
+    uint32_t ringDim = cryptoContext->GetRingDimension();
     // This is the maximum number of slots that can be used for full packing.
-    usint numSlots = ringDim / 2;
+    uint32_t numSlots = ringDim / 2;
     std::cout << "CKKS scheme is using ring dimension " << ringDim << std::endl << std::endl;
 
     cryptoContext->EvalBootstrapSetup(levelBudget);
@@ -158,7 +157,7 @@ void SimpleBootstrapExample() {
     size_t encodedLength  = x.size();
 
     const auto cryptoParams = std::dynamic_pointer_cast<CryptoParametersCKKSRNS>(cryptoContext->GetCryptoParameters());
-    usint compositeDegree   = cryptoParams->GetCompositeDegree();
+    uint32_t compositeDegree   = cryptoParams->GetCompositeDegree();
     // We start with a depleted ciphertext that has used up all of its levels.
     // Plaintext ptxt = cryptoContext->MakeCKKSPackedPlaintext(x, 1, depth - 1);
     Plaintext ptxt = cryptoContext->MakeCKKSPackedPlaintext(x, 1, compositeDegree * (depth - 1));
@@ -176,7 +175,7 @@ void SimpleBootstrapExample() {
 
     // Perform the bootstrapping operation. The goal is to increase the number of levels remaining
     // for HE computation.
-    auto ciphertextAfter = cryptoContext->EvalBootstrap(ciph, 1);  // , 11);
+    auto ciphertextAfter = cryptoContext->EvalBootstrap(ciph, 1);
 
     std::cout << "Number of levels remaining after bootstrapping: "
               << depth - ciphertextAfter->GetLevel() / compositeDegree - (ciphertextAfter->GetNoiseScaleDeg() - 1)
@@ -230,8 +229,8 @@ void SimpleBootstrapStCFirstExample() {
     * below unless you are an FHE expert.
     */
     ScalingTechnique rescaleTech = COMPOSITESCALINGAUTO;
-    usint dcrtBits               = 98;
-    usint firstMod               = 100;
+    uint32_t dcrtBits               = 98;
+    uint32_t firstMod               = 100;
 
     parameters.SetScalingModSize(dcrtBits);
     parameters.SetScalingTechnique(rescaleTech);
@@ -240,7 +239,7 @@ void SimpleBootstrapStCFirstExample() {
     parameters.SetSecurityLevel(HEStd_NotSet);
     parameters.SetRingDim(1 << 12);
 
-    usint registerWordSize = 64;
+    uint32_t registerWordSize = 64;
     parameters.SetRegisterWordSize(registerWordSize);
 
     /*  A4) Multiplicative depth.
@@ -256,7 +255,7 @@ void SimpleBootstrapStCFirstExample() {
     // will be levelsAvailableAfterBootstrap - 1 because an additional level
     // is used for scaling the ciphertext before next bootstrapping (in 64-bit CKKS bootstrapping)
     uint32_t levelsAvailableAfterBootstrap = 10 + levelBudget[1];
-    usint depth = levelsAvailableAfterBootstrap + FHECKKSRNS::GetBootstrapDepth({levelBudget[0], 0}, secretKeyDist);
+    uint32_t depth = levelsAvailableAfterBootstrap + FHECKKSRNS::GetBootstrapDepth({levelBudget[0], 0}, secretKeyDist);
     parameters.SetMultiplicativeDepth(depth);
 
     // std::cout << "approxBootstrapDepth = " << approxBootstrapDepth << std::endl;
@@ -273,9 +272,9 @@ void SimpleBootstrapStCFirstExample() {
     cryptoContext->Enable(ADVANCEDSHE);
     cryptoContext->Enable(FHE);
 
-    usint ringDim = cryptoContext->GetRingDimension();
+    uint32_t ringDim = cryptoContext->GetRingDimension();
     // This is the maximum number of slots that can be used for full packing.
-    usint numSlots = ringDim / 2;
+    uint32_t numSlots = ringDim / 2;
     std::cout << "CKKS scheme is using ring dimension " << ringDim << std::endl << std::endl;
 
     cryptoContext->EvalBootstrapSetup(levelBudget, {0, 0}, numSlots, 0, true, true);
@@ -288,7 +287,7 @@ void SimpleBootstrapStCFirstExample() {
     size_t encodedLength  = x.size();
 
     const auto cryptoParams = std::dynamic_pointer_cast<CryptoParametersCKKSRNS>(cryptoContext->GetCryptoParameters());
-    usint compositeDegree   = cryptoParams->GetCompositeDegree();
+    uint32_t compositeDegree   = cryptoParams->GetCompositeDegree();
     // We start with a depleted ciphertext that has used up all of its levels.
     Plaintext ptxt = cryptoContext->MakeCKKSPackedPlaintext(x, 1, compositeDegree * (depth - 1 - levelBudget[1]));
 

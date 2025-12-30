@@ -37,6 +37,9 @@ Example for CKKS bootstrapping with full packing
 
 #include "openfhe.h"
 
+#include <ostream>
+#include <vector>
+
 using namespace lbcrypto;
 
 void SimpleBootstrapExample();
@@ -206,12 +209,12 @@ void SimpleBootstrapStCExample() {
     */
 #if NATIVEINT == 128
     ScalingTechnique rescaleTech = FIXEDAUTO;
-    usint dcrtBits               = 78;
-    usint firstMod               = 89;
+    uint32_t dcrtBits               = 78;
+    uint32_t firstMod               = 89;
 #else
     ScalingTechnique rescaleTech = FLEXIBLEAUTO;
-    usint dcrtBits               = 59;
-    usint firstMod               = 60;
+    uint32_t dcrtBits               = 59;
+    uint32_t firstMod               = 60;
 #endif
 
     parameters.SetScalingModSize(dcrtBits);
@@ -231,7 +234,7 @@ void SimpleBootstrapStCExample() {
     // will be levelsAvailableAfterBootstrap - levelBudget[1] - 1 = 9 below because we perform SlotsToCoefficients
     // and a scaling the ciphertext before the modulus raise in the next bootstrapping (in 64-bit CKKS bootstrapping)
     uint32_t levelsAvailableAfterBootstrap = 10 + levelBudget[1];
-    usint depth = levelsAvailableAfterBootstrap + FHECKKSRNS::GetBootstrapDepth({levelBudget[0], 0}, secretKeyDist);
+    uint32_t depth = levelsAvailableAfterBootstrap + FHECKKSRNS::GetBootstrapDepth({levelBudget[0], 0}, secretKeyDist);
     parameters.SetMultiplicativeDepth(depth);
 
     CryptoContext<DCRTPoly> cryptoContext = GenCryptoContext(parameters);
@@ -261,7 +264,7 @@ void SimpleBootstrapStCExample() {
     Plaintext ptxt = cryptoContext->MakeCKKSPackedPlaintext(x, 1, depth - 1 - levelBudget[1], nullptr, numSlots);
 
     ptxt->SetLength(encodedLength);
-    std::cout << "Input: " << ptxt << std::endl;
+    std::cout << "Input: " << ptxt << "\n";
 
     Ciphertext<DCRTPoly> ciph = cryptoContext->Encrypt(keyPair.publicKey, ptxt);
 

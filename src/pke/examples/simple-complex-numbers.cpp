@@ -33,11 +33,10 @@
   Simple examples for CKKS
  */
 
-#define PROFILE
-
 #include "openfhe.h"
+
+#include <ostream>
 #include <vector>
-#include <iostream>
 
 using namespace lbcrypto;
 using namespace std::literals;
@@ -47,16 +46,14 @@ void SimpleBootstrappingComplex();
 void SimpleBootstrappingStCFirstComplex();
 
 int main() {
-    // SimpleComplexNumbers();
+    SimpleComplexNumbers();
     SimpleBootstrappingComplex();
     SimpleBootstrappingStCFirstComplex();
     return 0;
 }
 
 void SimpleComplexNumbers() {
-    std::cout << "\n=================Simple operations on Complex Numbers "
-                 "====================="
-              << std::endl;
+    std::cout << "\n================= Simple Operations on Complex Numbers =====================\n";
 
     // Step 1: Setup CryptoContext
 
@@ -155,7 +152,7 @@ void SimpleComplexNumbers() {
     cc->Enable(PKE);
     cc->Enable(KEYSWITCH);
     cc->Enable(LEVELEDSHE);
-    std::cout << "CKKS scheme is using ring dimension " << cc->GetRingDimension() << std::endl << std::endl;
+    std::cout << "CKKS scheme is using ring dimension " << cc->GetRingDimension() << "\n\n";
 
     // B. Step 2: Key Generation
     /* B1) Generate encryption keys.
@@ -218,8 +215,8 @@ void SimpleComplexNumbers() {
     Plaintext ptxt1 = cc->MakeCKKSPackedPlaintext(x1);
     Plaintext ptxt2 = cc->MakeCKKSPackedPlaintext(x2);
 
-    std::cout << "Input x1: " << ptxt1 << std::endl;
-    std::cout << "Input x2: " << ptxt2 << std::endl;
+    std::cout << "Input x1: " << ptxt1;
+    std::cout << "Input x2: " << ptxt2;
 
     // Encrypt the encoded vectors
     auto c1 = cc->Encrypt(keys.publicKey, ptxt1);
@@ -269,7 +266,7 @@ void SimpleComplexNumbers() {
     // to 15 and it should become visible.
     std::cout.precision(8);
 
-    std::cout << std::endl << "Decrypted complex inputs: " << std::endl;
+    std::cout << "\nDecrypted complex inputs:\n";
 
     cc->Decrypt(keys.secretKey, c1, &result);
     result->SetLength(batchSize);
@@ -279,7 +276,7 @@ void SimpleComplexNumbers() {
     result->SetLength(batchSize);
     std::cout << "x2 = " << result;
 
-    std::cout << std::endl << "Results of homomorphic computations: " << std::endl;
+    std::cout << "\nResults of homomorphic computations:\n";
 
     // Decrypt the result of addition
     cc->Decrypt(keys.secretKey, cAdd, &result);
@@ -289,53 +286,51 @@ void SimpleComplexNumbers() {
     // Decrypt the result of subtraction
     cc->Decrypt(keys.secretKey, cSub, &result);
     result->SetLength(batchSize);
-    std::cout << "x1 - x2 = " << result << std::endl;
+    std::cout << "x1 - x2 = " << result;
 
     // Decrypt the result of scalar multiplication
     cc->Decrypt(keys.secretKey, cScalar, &result);
     result->SetLength(batchSize);
-    std::cout << "4 * x1 = " << result << std::endl;
+    std::cout << "4 * x1 = " << result;
 
     // Decrypt the result of multiplication
     cc->Decrypt(keys.secretKey, cMul, &result);
     result->SetLength(batchSize);
-    std::cout << "x1 * x2 = " << result << std::endl;
+    std::cout << "x1 * x2 = " << result;
 
     // Decrypt the result of rotations
     cc->Decrypt(keys.secretKey, cRot1, &result);
     result->SetLength(batchSize);
-    std::cout << "In rotations, very small outputs (~10^-10 here) correspond to 0's:" << std::endl;
-    std::cout << "x1 rotated by 1 = " << result << std::endl;
+    std::cout << "\nIn rotations, very small outputs (~10^-10 here) correspond to 0's:\n";
+    std::cout << "x1 rotated by 1 = " << result;
 
     cc->Decrypt(keys.secretKey, cRot2, &result);
     result->SetLength(batchSize);
-    std::cout << "x1 rotated by -2 = " << result << std::endl;
+    std::cout << "x1 rotated by -2 = " << result;
 
     // Decrypt the result of conjugation
     cc->Decrypt(keys.secretKey, cConj1, &result);
     result->SetLength(batchSize);
-    std::cout << "x1 conjugated = " << result << std::endl;
+    std::cout << "x1 conjugated = " << result;
 
     // Decrypt the result of multiplication by complex value
     cc->Decrypt(keys.secretKey, cMulC, &result);
     result->SetLength(batchSize);
-    std::cout << "x1 * (1 - 2i) = " << result << std::endl;
+    std::cout << "x1 * (1 - 2i) = " << result;
 
     // Decrypt the result of additions by two complex values
     cc->Decrypt(keys.secretKey, cAddC, &result);
     result->SetLength(batchSize);
-    std::cout << "x2 + (1 - 2i) + (1 + 0.5i) = " << result << std::endl;
+    std::cout << "x2 + (1 - 2i) + (1 + 0.5i) = " << result;
 
     // Decrypt the result of subtractions by two complex values
     cc->Decrypt(keys.secretKey, cSubC, &result);
     result->SetLength(batchSize);
-    std::cout << "x2 - (1 - 2i) - (1 + 0.5i) = " << result << std::endl;
+    std::cout << "x2 - (1 - 2i) - (1 + 0.5i) = " << result;
 }
 
 void SimpleBootstrappingComplex() {
-    std::cout << "\n=================Bootstrapping Complex Numbers "
-                 "====================="
-              << std::endl;
+    std::cout << "\n================= Bootstrapping Complex Numbers =====================\n";
 
     CCParams<CryptoContextCKKSRNS> parameters;
     // A. Specify main parameters
@@ -358,7 +353,7 @@ void SimpleBootstrappingComplex() {
     * you do not need to set the ring dimension.
     */
     parameters.SetSecurityLevel(HEStd_NotSet);
-    usint ringDim = 1 << 5;
+    uint32_t ringDim = 1 << 6;
     parameters.SetRingDim(ringDim);
 
     /*  A3) Scaling parameters.
@@ -368,12 +363,12 @@ void SimpleBootstrappingComplex() {
     */
 #if NATIVEINT == 128
     ScalingTechnique rescaleTech = FIXEDAUTO;
-    usint dcrtBits               = 78;
-    usint firstMod               = 89;
+    uint32_t dcrtBits               = 78;
+    uint32_t firstMod               = 89;
 #else
     ScalingTechnique rescaleTech = FLEXIBLEAUTO;
-    usint dcrtBits               = 59;
-    usint firstMod               = 60;
+    uint32_t dcrtBits               = 59;
+    uint32_t firstMod               = 60;
 #endif
 
     parameters.SetScalingModSize(dcrtBits);
@@ -397,7 +392,7 @@ void SimpleBootstrappingComplex() {
    * bootstrapping up to N/2 real numbers in the StC variant of bootstrapping requires evaluating the modular
    * approximation polynomial on a single ciphertext.
    */
-    usint numSlots = ringDim / 2;
+    uint32_t numSlots = ringDim / 2;
     // parameters.SetBatchSize(numSlots);
 
     /*  A6) Multiplicative depth.
@@ -413,7 +408,7 @@ void SimpleBootstrappingComplex() {
     // will be levelsAvailableAfterBootstrap - 1 because an additional level
     // is used for scaling the ciphertext before next bootstrapping (in 64-bit CKKS bootstrapping)
     uint32_t levelsAvailableAfterBootstrap = 10;
-    usint depth = levelsAvailableAfterBootstrap + FHECKKSRNS::GetBootstrapDepth(levelBudget, secretKeyDist);
+    uint32_t depth = levelsAvailableAfterBootstrap + FHECKKSRNS::GetBootstrapDepth(levelBudget, secretKeyDist);
     parameters.SetMultiplicativeDepth(depth);
 
     CryptoContext<DCRTPoly> cryptoContext = GenCryptoContext(parameters);
@@ -424,8 +419,7 @@ void SimpleBootstrappingComplex() {
     cryptoContext->Enable(ADVANCEDSHE);
     cryptoContext->Enable(FHE);
 
-    std::cout << "CKKS scheme is using ring dimension " << ringDim << " and number of slots " << numSlots << std::endl
-              << std::endl;
+    std::cout << "CKKS scheme is using ring dimension " << ringDim << " and number of slots " << numSlots << "\n\n";
 
     cryptoContext->EvalBootstrapSetup(levelBudget, {0, 0}, numSlots);
 
@@ -443,30 +437,27 @@ void SimpleBootstrappingComplex() {
     Plaintext ptxt = cryptoContext->MakeCKKSPackedPlaintext(x, 1, depth - 1, nullptr, numSlots);
 
     ptxt->SetLength(encodedLength);
-    std::cout << "Input: " << ptxt << std::endl;
+    std::cout << "Input: " << ptxt << "\n";
 
     Ciphertext<DCRTPoly> ciph = cryptoContext->Encrypt(keyPair.publicKey, ptxt);
 
-    std::cout << "Initial number of levels remaining: " << depth - ciph->GetLevel() << std::endl;
+    std::cout << "Initial number of levels remaining: " << (depth - ciph->GetLevel()) << "\n";
 
     // Perform the bootstrapping operation. The goal is to increase the number of levels remaining
     // for HE computation.
     auto ciphertextAfter = cryptoContext->EvalBootstrap(ciph);
 
     std::cout << "Number of levels remaining after bootstrapping: "
-              << depth - ciphertextAfter->GetLevel() - (ciphertextAfter->GetNoiseScaleDeg() - 1) << std::endl
-              << std::endl;
+              << (depth - ciphertextAfter->GetLevel() - (ciphertextAfter->GetNoiseScaleDeg() - 1)) << "\n\n";
 
     Plaintext result;
     cryptoContext->Decrypt(keyPair.secretKey, ciphertextAfter, &result);
     result->SetLength(encodedLength);
-    std::cout << "Output after bootstrapping \n\t" << result << std::endl;
+    std::cout << "Output after bootstrapping: \n\t" << result;
 }
 
 void SimpleBootstrappingStCFirstComplex() {
-    std::cout << "\n=================Bootstrapping Complex Numbers with StC transformation first"
-                 "====================="
-              << std::endl;
+    std::cout << "\n================= Bootstrapping Complex Numbers with StC Transformation First =====================\n";
 
     CCParams<CryptoContextCKKSRNS> parameters;
     // A. Specify main parameters
@@ -489,7 +480,7 @@ void SimpleBootstrappingStCFirstComplex() {
     * you do not need to set the ring dimension.
     */
     parameters.SetSecurityLevel(HEStd_NotSet);
-    usint ringDim = 1 << 6;
+    uint32_t ringDim = 1 << 6;
     parameters.SetRingDim(ringDim);
 
     /*  A3) Scaling parameters.
@@ -499,12 +490,12 @@ void SimpleBootstrappingStCFirstComplex() {
     */
 #if NATIVEINT == 128
     ScalingTechnique rescaleTech = FIXEDAUTO;
-    usint dcrtBits               = 78;
-    usint firstMod               = 89;
+    uint32_t dcrtBits               = 78;
+    uint32_t firstMod               = 89;
 #else
     ScalingTechnique rescaleTech = FLEXIBLEAUTO;
-    usint dcrtBits               = 59;
-    usint firstMod               = 60;
+    uint32_t dcrtBits               = 59;
+    uint32_t firstMod               = 60;
 #endif
 
     parameters.SetScalingModSize(dcrtBits);
@@ -528,7 +519,7 @@ void SimpleBootstrappingStCFirstComplex() {
    * bootstrapping up to N/2 real numbers in the StC variant of bootstrapping requires evaluating the modular
    * approximation polynomial on a single ciphertext.
    */
-    usint numSlots = ringDim / 2;
+    uint32_t numSlots = ringDim / 2;
     // parameters.SetBatchSize(numSlots);
 
     /*  A6) Multiplicative depth.
@@ -544,7 +535,7 @@ void SimpleBootstrappingStCFirstComplex() {
     // will be levelsAvailableAfterBootstrap - 1 because an additional level
     // is used for scaling the ciphertext before next bootstrapping (in 64-bit CKKS bootstrapping)
     uint32_t levelsAvailableAfterBootstrap = 10 + levelBudget[1];
-    usint depth = levelsAvailableAfterBootstrap + FHECKKSRNS::GetBootstrapDepth({levelBudget[0], 0}, secretKeyDist);
+    uint32_t depth = levelsAvailableAfterBootstrap + FHECKKSRNS::GetBootstrapDepth({levelBudget[0], 0}, secretKeyDist);
     parameters.SetMultiplicativeDepth(depth);
 
     CryptoContext<DCRTPoly> cryptoContext = GenCryptoContext(parameters);
@@ -555,9 +546,7 @@ void SimpleBootstrappingStCFirstComplex() {
     cryptoContext->Enable(ADVANCEDSHE);
     cryptoContext->Enable(FHE);
 
-    std::cout << "CKKS scheme is using ring dimension " << ringDim << " and number of slots " << numSlots
-              << " with depth " << depth << std::endl
-              << std::endl;
+    std::cout << "CKKS scheme is using ring dimension " << ringDim << " and number of slots " << numSlots << " with depth " << depth << "\n\n";
 
     cryptoContext->EvalBootstrapSetup(levelBudget, {0, 0}, numSlots, 0, true, true);
 
@@ -575,22 +564,21 @@ void SimpleBootstrappingStCFirstComplex() {
     Plaintext ptxt = cryptoContext->MakeCKKSPackedPlaintext(x, 1, depth - 1 - levelBudget[1], nullptr, numSlots);
 
     ptxt->SetLength(encodedLength);
-    std::cout << "Input: " << ptxt << std::endl;
+    std::cout << "Input: " << ptxt << "\n";
 
     Ciphertext<DCRTPoly> ciph = cryptoContext->Encrypt(keyPair.publicKey, ptxt);
 
-    std::cout << "Initial number of levels remaining: " << depth - ciph->GetLevel() << std::endl;
+    std::cout << "Initial number of levels remaining: " << (depth - ciph->GetLevel()) << "\n";
 
     // Perform the bootstrapping operation. The goal is to increase the number of levels remaining
     // for HE computation.
     auto ciphertextAfter = cryptoContext->EvalBootstrap(ciph);
 
     std::cout << "Number of levels remaining after bootstrapping: "
-              << depth - ciphertextAfter->GetLevel() - (ciphertextAfter->GetNoiseScaleDeg() - 1) << std::endl
-              << std::endl;
+              << (depth - ciphertextAfter->GetLevel() - (ciphertextAfter->GetNoiseScaleDeg() - 1)) << "\n\n";
 
     Plaintext result;
     cryptoContext->Decrypt(keyPair.secretKey, ciphertextAfter, &result);
     result->SetLength(2 * encodedLength);
-    std::cout << "Output after bootstrapping \n\t" << result << std::endl;
+    std::cout << "Output after bootstrapping: \n\t" << result;
 }

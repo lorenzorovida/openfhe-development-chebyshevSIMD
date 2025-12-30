@@ -138,7 +138,7 @@ public:
 
     virtual Ciphertext<Element> EvalBootstrapStCFirst(ConstCiphertext<Element>& ciphertext, uint32_t numIterations,
                                                       uint32_t precision) const {
-        OPENFHE_THROW("EvalBootstrap is not implemented for this scheme");
+        OPENFHE_THROW(NOT_SUPPORTED_SIMPLE_ERROR);
     }
 
     virtual void EvalFBTSetup(const CryptoContextImpl<Element>& cc, const std::vector<std::complex<double>>& coeffs,
