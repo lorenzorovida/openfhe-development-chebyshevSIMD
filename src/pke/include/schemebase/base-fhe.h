@@ -130,6 +130,11 @@ public:
         OPENFHE_THROW("EvalBootstrap is not implemented for this scheme");
     }
 
+    //https://eprint.iacr.org/2024/767
+    virtual Ciphertext<Element> EvalBootstrapBinary(ConstCiphertext<Element>& ciphertext, KeyPair<DCRTPoly> key_pair) const {
+        OPENFHE_THROW("EvalBootstrap is not implemented for this scheme");
+    }
+
     virtual void EvalFBTSetup(const CryptoContextImpl<Element>& cc, const std::vector<std::complex<double>>& coeffs,
                               uint32_t numSlots, const BigInteger& PIn, const BigInteger& POut, const BigInteger& Bigq,
                               const PublicKey<DCRTPoly>& pubKey, const std::vector<uint32_t>& dim1,

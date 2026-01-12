@@ -157,6 +157,8 @@ public:
     Ciphertext<DCRTPoly> EvalBootstrap(ConstCiphertext<DCRTPoly>& ciphertext, uint32_t numIterations,
                                        uint32_t precision) const override;
 
+    Ciphertext<DCRTPoly> EvalBootstrapBinary(ConstCiphertext<DCRTPoly>& ciphertext, KeyPair<DCRTPoly> key_pair) const override;
+
     void EvalFBTSetup(const CryptoContextImpl<DCRTPoly>& cc, const std::vector<std::complex<double>>& coefficients,
                       uint32_t numSlots, const BigInteger& PIn, const BigInteger& POut, const BigInteger& Bigq,
                       const PublicKey<DCRTPoly>& pubKey, const std::vector<uint32_t>& dim1,
@@ -301,13 +303,15 @@ public:
         return "FHECKKSRNS";
     }
 
-private:
     CKKSBootstrapPrecom& GetBootPrecom(uint32_t slots) const {
         auto pair = m_bootPrecomMap.find(slots);
         if (pair != m_bootPrecomMap.end())
             return *(pair->second);
         OPENFHE_THROW("Precomputations for " + std::to_string(slots) + " slots not found.");
     }
+
+private:
+
 
     //------------------------------------------------------------------------------
     // Find Rotation Indices

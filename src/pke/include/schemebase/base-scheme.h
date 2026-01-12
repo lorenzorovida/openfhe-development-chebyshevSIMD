@@ -113,6 +113,7 @@ public:
             Enable(SCHEMESWITCH);
     }
 
+
     uint32_t GetEnabled() const {
         uint32_t flag = 0;
         if (m_PKE != nullptr)
@@ -1189,6 +1190,11 @@ public:
         return m_FHE->EvalBootstrap(ciphertext, numIterations, precision);
     }
 
+    Ciphertext<Element> EvalBootstrapBinary(ConstCiphertext<Element>& ciphertext, KeyPair<DCRTPoly> key_pair) const {
+        VerifyFHEEnabled(__func__);
+        return m_FHE->EvalBootstrapBinary(ciphertext, key_pair);
+    }
+
     template <typename VectorDataType>
     void EvalFBTSetup(const CryptoContextImpl<Element>& cc, const std::vector<VectorDataType>& coeffs,
                       uint32_t numSlots, const BigInteger& PIn, const BigInteger& POut, const BigInteger& Bigq,
@@ -1558,6 +1564,8 @@ public:
         return out;
     }
 
+    std::shared_ptr<FHEBase<Element>> m_FHE;
+
 protected:
     std::shared_ptr<ParameterGenerationBase<Element>> m_ParamsGen;
     std::shared_ptr<PKEBase<Element>> m_PKE;
@@ -1566,7 +1574,6 @@ protected:
     std::shared_ptr<LeveledSHEBase<Element>> m_LeveledSHE;
     std::shared_ptr<AdvancedSHEBase<Element>> m_AdvancedSHE;
     std::shared_ptr<MultipartyBase<Element>> m_Multiparty;
-    std::shared_ptr<FHEBase<Element>> m_FHE;
     std::shared_ptr<FHEBase<Element>> m_SchemeSwitch;
 
     inline void CheckMultipartyDecryptCompatibility(ConstCiphertext<Element>& ciphertext, CALLER_INFO_ARGS_HDR) const {

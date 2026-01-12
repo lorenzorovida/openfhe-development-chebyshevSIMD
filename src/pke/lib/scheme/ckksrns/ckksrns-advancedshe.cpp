@@ -1196,7 +1196,7 @@ static Ciphertext<DCRTPoly> InnerEvalChebyshevPSBatch(ConstCiphertext<DCRTPoly>&
             // NOTE: We can not optimize anymore since it is not a constant, so we always perform the product
 
             std::vector<double> coeffs;
-            for (uint32_t i = 0; i < divcsVec.size(); i++) coeffs.push_back(divcsVec[i]->q[1]);
+            for (size_t i = 0; i < divcsVec.size(); i++) coeffs.push_back(divcsVec[i]->q[1]);
 
             cu = cc->EvalMult(T.front(), cc->MakeCKKSPackedPlaintext(coeffs, 1, T.front()->GetLevel(),
                                                                      nullptr, T.front()->GetSlots()));
@@ -1210,7 +1210,7 @@ static Ciphertext<DCRTPoly> InnerEvalChebyshevPSBatch(ConstCiphertext<DCRTPoly>&
                 ctxs[i] = T[i];
             }
 
-            for (uint32_t j = 0; j < divcsVec.size(); j++) {
+            for (size_t j = 0; j < divcsVec.size(); j++) {
                 std::vector<double> weights(dc);
                 for (uint32_t i = 0; i < dc; i++) {
                     weights[i] = divcsVec[j]->q[i + 1];
@@ -1225,7 +1225,7 @@ static Ciphertext<DCRTPoly> InnerEvalChebyshevPSBatch(ConstCiphertext<DCRTPoly>&
 
         // adds the free term (at x^0)
         std::vector<double> freeTerms;
-        for (uint32_t i = 0; i < divcsVec.size(); i++) {
+        for (size_t i = 0; i < divcsVec.size(); i++) {
             freeTerms.push_back(divcsVec[i]->q.front() / 2.0);
         }
 
@@ -1244,7 +1244,7 @@ static Ciphertext<DCRTPoly> InnerEvalChebyshevPSBatch(ConstCiphertext<DCRTPoly>&
 
     if (Degree(divqrVec[0]->q) > k) {
         std::vector<std::vector<double>> coeffs;
-        for (int i = 0; i < divqrVec.size(); i++) {
+        for (size_t i = 0; i < divqrVec.size(); i++) {
             coeffs.push_back(divqrVec[i]->q);
         }
 
@@ -1263,7 +1263,7 @@ static Ciphertext<DCRTPoly> InnerEvalChebyshevPSBatch(ConstCiphertext<DCRTPoly>&
             std::vector<Ciphertext<DCRTPoly>> ctxs(Degree(qcopy));
             std::vector<std::vector<double>> weights(divqrVec.size());
 
-            for (uint32_t j = 0; j < divqrVec.size(); j++) {
+            for (size_t j = 0; j < divqrVec.size(); j++) {
                 std::vector<double> weightsForLevel;
                 for (uint32_t i = 0; i < Degree(qcopy); ++i) {
                     ctxs[i] = T[i];
@@ -1294,7 +1294,7 @@ static Ciphertext<DCRTPoly> InnerEvalChebyshevPSBatch(ConstCiphertext<DCRTPoly>&
 
         // adds the free term (at x^0)
         std::vector<double> freeTerms;
-        for (uint32_t i = 0; i < divqrVec.size(); i++) {
+        for (size_t i = 0; i < divqrVec.size(); i++) {
             freeTerms.push_back(divqrVec[i]->q.front() / 2.0);
         }
 
@@ -1358,7 +1358,7 @@ static Ciphertext<DCRTPoly> InnerEvalChebyshevPSBatch(ConstCiphertext<DCRTPoly>&
     }
     else {
         std::vector<double> terms;
-        for (uint32_t i = 0; i < divcsVec.size(); i++) {
+        for (size_t i = 0; i < divcsVec.size(); i++) {
             terms.push_back(divcsVec[i]->q.front() / 2.0);
         }
 
@@ -1765,7 +1765,7 @@ static inline Ciphertext<DCRTPoly> internalEvalChebyshevSeriesPSBatchWithPrecomp
             // if (IsNotEqualOne(divcs->q[1])) {
             // NOTE: We can not optimize anymore since it is not a constant, so we always perform the product
             std::vector<double> coeffs;
-            for (uint32_t i = 0; i < divcsVec.size(); i++) coeffs.push_back(divcsVec[i]->q[1]);
+            for (size_t i = 0; i < divcsVec.size(); i++) coeffs.push_back(divcsVec[i]->q[1]);
 
             cu = cc->EvalMult(T.front(), cc->MakeCKKSPackedPlaintext(coeffs, 1, T.front()->GetLevel(),
                                                                      nullptr, T.front()->GetSlots()));
@@ -1775,13 +1775,13 @@ static inline Ciphertext<DCRTPoly> internalEvalChebyshevSeriesPSBatchWithPrecomp
             std::vector<std::vector<double>> batchOfWeights;
             std::vector<Ciphertext<DCRTPoly>> ctxs(dc);
 
-            for (uint32_t i = 0; i < dc; i++) {
+            for (size_t i = 0; i < dc; i++) {
                 ctxs[i] = T[i];
             }
 
-            for (uint32_t j = 0; j < divcsVec.size(); j++) {
+            for (size_t j = 0; j < divcsVec.size(); j++) {
                 std::vector<double> weights(dc);
-                for (uint32_t i = 0; i < dc; i++) {
+                for (size_t i = 0; i < dc; i++) {
                     weights[i] = divcsVec[j]->q[i + 1];
                 }
 
@@ -1793,7 +1793,7 @@ static inline Ciphertext<DCRTPoly> internalEvalChebyshevSeriesPSBatchWithPrecomp
 
         // adds the free term (at x^0)
         std::vector<double> freeTerms;
-        for (uint32_t i = 0; i < divcsVec.size(); i++) {
+        for (size_t i = 0; i < divcsVec.size(); i++) {
             freeTerms.push_back(divcsVec[i]->q.front() / 2.0);
         }
 
@@ -1815,7 +1815,7 @@ static inline Ciphertext<DCRTPoly> internalEvalChebyshevSeriesPSBatchWithPrecomp
     // Again, degrees should all be the same for the different divqrVec
     if (Degree(divqrVec[0]->q) > k) {
         std::vector<std::vector<double>> coeffs;
-        for (int i = 0; i < divqrVec.size(); i++) {
+        for (size_t i = 0; i < divqrVec.size(); i++) {
             coeffs.push_back(divqrVec[i]->q);
         }
         qu = InnerEvalChebyshevPSBatch(T[0], coeffs, k, m - 1, T, T2);
@@ -1830,7 +1830,7 @@ static inline Ciphertext<DCRTPoly> internalEvalChebyshevSeriesPSBatchWithPrecomp
             std::vector<Ciphertext<DCRTPoly>> ctxs(Degree(qcopy));
             std::vector<std::vector<double>> weights(divqrVec.size());
 
-            for (uint32_t j = 0; j < divqrVec.size(); ++j) {
+            for (size_t j = 0; j < divqrVec.size(); ++j) {
                 std::vector<double> weightsForLevel;
                 for (uint32_t i = 0; i < Degree(qcopy); ++i) {
                     ctxs[i] = T[i];
@@ -1863,7 +1863,7 @@ static inline Ciphertext<DCRTPoly> internalEvalChebyshevSeriesPSBatchWithPrecomp
 
         // adds the free term (at x^0)
         std::vector<double> freeTerms;
-        for (uint32_t i = 0; i < divqrVec.size(); i++) {
+        for (size_t i = 0; i < divqrVec.size(); i++) {
             freeTerms.push_back(divqrVec[i]->q.front() / 2.0);
         }
 
@@ -1930,7 +1930,7 @@ static inline Ciphertext<DCRTPoly> internalEvalChebyshevSeriesPSBatchWithPrecomp
     }
     else {
         std::vector<double> terms;
-        for (uint32_t i = 0; i < divcsVec.size(); i++) {
+        for (size_t i = 0; i < divcsVec.size(); i++) {
             terms.push_back(divcsVec[i]->q.front() / 2.0);
         }
 

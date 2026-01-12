@@ -398,6 +398,405 @@ void FHECKKSRNS::EvalBootstrapPrecompute(const CryptoContextImpl<DCRTPoly>& cc, 
     }
 }
 
+
+Ciphertext<DCRTPoly> FHECKKSRNS::EvalBootstrapBinary(ConstCiphertext<DCRTPoly>& ciphertext, KeyPair<DCRTPoly> key_pair) const {
+    const auto cryptoParams = std::dynamic_pointer_cast<CryptoParametersCKKSRNS>(ciphertext->GetCryptoParameters());
+
+    if (cryptoParams->GetKeySwitchTechnique() != HYBRID)
+        OPENFHE_THROW("CKKS Bootstrapping only supported with Hybrid key switching.");
+    auto st = cryptoParams->GetScalingTechnique();
+#if NATIVEINT == 128
+    if (st == FLEXIBLEAUTO || st == FLEXIBLEAUTOEXT)
+        OPENFHE_THROW("128-bit CKKS Bootstrapping only supported for FIXEDMANUAL and FIXEDAUTO.");
+#endif
+
+#ifdef BOOTSTRAPTIMING
+    TimeVar t;
+    double timeEncode(0.0);
+    double timeModReduce(0.0);
+    double timeDecode(0.0);
+#endif
+
+    auto cc                  = ciphertext->GetCryptoContext();
+    uint32_t L0              = cryptoParams->GetElementParams()->GetParams().size();
+    auto initSizeQ           = ciphertext->GetElements()[0].GetNumOfElements();
+    uint32_t compositeDegree = cryptoParams->GetCompositeDegree();
+
+    uint32_t slots = ciphertext->GetSlots();
+
+    auto elementParamsRaised = *(cryptoParams->GetElementParams());
+    // For FLEXIBLEAUTOEXT we raised ciphertext does not include extra modulus
+    // as it is multiplied by auxiliary plaintext
+    if (st == FLEXIBLEAUTOEXT)
+        elementParamsRaised.PopLastParam();
+
+    auto paramsQ   = elementParamsRaised.GetParams();
+    uint32_t sizeQ = paramsQ.size();
+    std::vector<NativeInteger> moduli(sizeQ);
+    std::vector<NativeInteger> roots(sizeQ);
+    for (uint32_t i = 0; i < sizeQ; ++i) {
+        moduli[i] = paramsQ[i]->GetModulus();
+        roots[i]  = paramsQ[i]->GetRootOfUnity();
+    }
+    auto elementParamsRaisedPtr =
+        std::make_shared<ILDCRTParams<DCRTPoly::Integer>>(cc->GetCyclotomicOrder(), moduli, roots);
+
+    double qDouble = GetBigModulus(cryptoParams);
+    double powP    = std::pow(2, cryptoParams->GetPlaintextModulus());
+    int32_t deg    = std::round(std::log2(qDouble / powP));
+#if NATIVEINT != 128
+    if (deg > static_cast<int32_t>(m_correctionFactor) && st != COMPOSITESCALINGAUTO && st != COMPOSITESCALINGMANUAL) {
+        OPENFHE_THROW("Degree [" + std::to_string(deg) + "] must be less than or equal to the correction factor [" +
+                      std::to_string(m_correctionFactor) + "].");
+    }
+#endif
+    uint32_t correction = m_correctionFactor - deg;
+    double post         = std::pow(2, static_cast<double>(deg));
+
+    // TODO: YSP Can be extended to FLEXIBLE* scaling techniques as well as the closeness of 2^p to moduli is no longer needed
+    double pre      = (compositeDegree > 1) ? cryptoParams->GetScalingFactorReal(0) / qDouble : 1. / post;
+    uint64_t scalar = std::llround(post);
+
+    //------------------------------------------------------------------------------
+    // RAISING THE MODULUS
+    //------------------------------------------------------------------------------
+
+    // In FLEXIBLEAUTO, raising the ciphertext to a larger number
+    // of towers is a bit more complex, because we need to adjust
+    // it's scaling factor to the one that corresponds to the level
+    // it's being raised to.
+    // Increasing the modulus
+
+    auto raised = ciphertext->Clone();
+    auto algo   = cc->GetScheme();
+    algo->ModReduceInternalInPlace(raised, compositeDegree * (raised->GetNoiseScaleDeg() - 1));
+    std::cout << "correction adjust: " << correction << std::endl;
+    AdjustCiphertext(raised, correction);
+
+    uint32_t N = cc->GetRingDimension();
+    if (compositeDegree > 1) {
+        // RNS basis extension from level 0 RNS limbs to the raised RNS basis
+        auto& ctxtDCRT = raised->GetElements();
+        ExtendCiphertext(ctxtDCRT, *cc, elementParamsRaisedPtr);
+        raised->SetLevel(L0 - ctxtDCRT[0].GetNumOfElements());
+    }
+    else {
+        if (cryptoParams->GetSecretKeyDist() == SPARSE_ENCAPSULATED) {
+            auto evalKeyMap = cc->GetEvalAutomorphismKeyMap(raised->GetKeyTag());
+
+            // transform from a denser secret to a sparser one
+            raised = KeySwitchSparse(raised, evalKeyMap.at(2 * N - 4));
+
+            // Only level 0 ciphertext used here. Other towers ignored to make CKKS bootstrapping faster.
+            auto& ctxtDCRT = raised->GetElements();
+            for (auto& poly : ctxtDCRT) {
+                poly.SetFormat(COEFFICIENT);
+                DCRTPoly temp(elementParamsRaisedPtr, COEFFICIENT);
+                temp = poly.GetElementAtIndex(0);
+                temp.SetFormat(EVALUATION);
+                poly = std::move(temp);
+            }
+            raised->SetLevel(L0 - ctxtDCRT[0].GetNumOfElements());
+
+            // go back to a denser secret
+            algo->KeySwitchInPlace(raised, evalKeyMap.at(2 * N - 2));
+        }
+        else {
+            // Only level 0 ciphertext used here. Other towers ignored to make CKKS bootstrapping faster.
+            auto& ctxtDCRT = raised->GetElements();
+            for (auto& poly : ctxtDCRT) {
+                poly.SetFormat(COEFFICIENT);
+                DCRTPoly temp(elementParamsRaisedPtr, COEFFICIENT);
+                temp = poly.GetElementAtIndex(0);
+                temp.SetFormat(EVALUATION);
+                poly = std::move(temp);
+            }
+            raised->SetLevel(L0 - ctxtDCRT[0].GetNumOfElements());
+        }
+    }
+
+#ifdef BOOTSTRAPTIMING
+    std::cerr << "\nNumber of levels at the beginning of bootstrapping: "
+              << raised->GetElements()[0].GetNumOfElements() - 1 << std::endl;
+#endif
+
+    //------------------------------------------------------------------------------
+    // SETTING PARAMETERS FOR APPROXIMATE MODULAR REDUCTION
+    //------------------------------------------------------------------------------
+
+    // Coefficients of the Chebyshev series interpolating 1/(2 Pi) Sin(2 Pi K x)
+    std::vector<double> coefficients;
+    double k = 0;
+
+    if (cryptoParams->GetSecretKeyDist() == SPARSE_TERNARY) {
+        coefficients = g_coefficientsSparse;
+        // k = K_SPARSE;
+        k = 1.0;  // do not divide by k as we already did it during precomputation
+    }
+    else if (cryptoParams->GetSecretKeyDist() == SPARSE_ENCAPSULATED) {
+        coefficients = g_coefficientsSparseEncapsulated;
+        k = 1.0;  // do not divide by k as we already did it during precomputation
+    }
+    else {
+        // For larger composite degrees, larger K used to achieve a reasonable probability of failure
+        if ((compositeDegree == 1) || ((compositeDegree == 2) && (N < (1 << 17)))) {
+            coefficients = g_coefficientsUniform;
+            k            = K_UNIFORM;
+        }
+        else {
+            coefficients = g_coefficientsUniformExt;
+            k            = K_UNIFORMEXT;
+        }
+    }
+
+    std::cerr << "pre: " << pre << std::endl;
+    std::cerr << "total scale: " << pre * (1.0 / (k * N)) << std::endl;
+    cc->EvalMultInPlace(raised, pre * (1.0 / (k * N)));
+
+    //k probably è la scala per le double angle
+
+    // no linear transformations are needed for Chebyshev series as the range has been normalized to [-1,1]
+    double coeffLowerBound = -1;
+    double coeffUpperBound = 1;
+
+    auto& p = GetBootPrecom(slots);
+
+    bool isLTBootstrap =
+        (p.m_paramsEnc[CKKS_BOOT_PARAMS::LEVEL_BUDGET] == 1) && (p.m_paramsDec[CKKS_BOOT_PARAMS::LEVEL_BUDGET] == 1);
+
+    Ciphertext<DCRTPoly> ctxtDec;
+    if (slots == cc->GetCyclotomicOrder() / 4) {
+        //------------------------------------------------------------------------------
+        // FULLY PACKED CASE
+        //------------------------------------------------------------------------------
+
+#ifdef BOOTSTRAPTIMING
+        TIC(t);
+#endif
+
+        //------------------------------------------------------------------------------
+        // Running CoeffToSlot
+        //------------------------------------------------------------------------------
+
+        // need to call internal modular reduction so it also works for FLEXIBLEAUTO
+        algo->ModReduceInternalInPlace(raised, compositeDegree);
+
+        // only one linear transform is needed as the other one can be derived
+        auto ctxtEnc =
+            (isLTBootstrap) ? EvalLinearTransform(p.m_U0hatTPre, raised) : EvalCoeffsToSlots(p.m_U0hatTPreFFT, raised);
+
+        auto evalKeyMap = cc->GetEvalAutomorphismKeyMap(ctxtEnc->GetKeyTag());
+        auto conj       = Conjugate(ctxtEnc, evalKeyMap);
+        auto ctxtEncI   = cc->EvalSub(ctxtEnc, conj);
+        algo->MultByMonomialInPlace(ctxtEncI, 3 * slots);
+        cc->EvalAddInPlaceNoCheck(ctxtEnc, conj);
+
+        if (st == FIXEDMANUAL) {
+            while (ctxtEnc->GetNoiseScaleDeg() > 1) {
+                cc->ModReduceInPlace(ctxtEnc);
+                cc->ModReduceInPlace(ctxtEncI);
+            }
+        }
+        else {
+            if (ctxtEnc->GetNoiseScaleDeg() == 2) {
+                algo->ModReduceInternalInPlace(ctxtEnc, compositeDegree);
+                algo->ModReduceInternalInPlace(ctxtEncI, compositeDegree);
+            }
+        }
+
+        //------------------------------------------------------------------------------
+        // Running Approximate Mod Reduction
+        //------------------------------------------------------------------------------
+
+        Plaintext ptxt;
+
+        ctxtEnc->GetCryptoContext()->Decrypt(key_pair.secretKey, ctxtEnc, &ptxt);
+        std::cout << "P prima di cheby: " << ptxt << std::endl;
+
+        // Evaluate Chebyshev series for the sine wave
+        ctxtEnc  = cc->EvalChebyshevSeries(ctxtEnc, coefficients, coeffLowerBound, coeffUpperBound);
+        ctxtEncI = cc->EvalChebyshevSeries(ctxtEncI, coefficients, coeffLowerBound, coeffUpperBound);
+
+        ctxtEnc->GetCryptoContext()->Decrypt(key_pair.secretKey, ctxtEnc, &ptxt);
+        std::cout << "P dopo  di cheby: " << ptxt << std::endl;
+
+        // Double-angle iterations
+        if (st != FIXEDMANUAL) {
+            algo->ModReduceInternalInPlace(ctxtEnc, compositeDegree);
+            algo->ModReduceInternalInPlace(ctxtEncI, compositeDegree);
+        }
+        uint32_t numIter;
+        if (cryptoParams->GetSecretKeyDist() == UNIFORM_TERNARY)
+            numIter = R_UNIFORM;
+        else
+            numIter = R_SPARSE;
+
+        ApplyDoubleAngleIterations(ctxtEnc, numIter);
+        ApplyDoubleAngleIterations(ctxtEncI, numIter);
+
+        ctxtEnc->GetCryptoContext()->Decrypt(key_pair.secretKey, ctxtEnc, &ptxt);
+
+        std::cout << "dopo double angle : " << ptxt->GetRealPackedValue() << std::endl;
+
+        algo->MultByMonomialInPlace(ctxtEncI, slots);
+        cc->EvalAddInPlaceNoCheck(ctxtEnc, ctxtEncI);
+
+        if (st != COMPOSITESCALINGAUTO && st != COMPOSITESCALINGMANUAL) {
+            // scale the message back up after Chebyshev interpolation
+            algo->MultByIntegerInPlace(ctxtEnc, scalar);
+        }
+
+#ifdef BOOTSTRAPTIMING
+        timeModReduce = TOC(t);
+        std::cerr << "Approximate modular reduction time: " << timeModReduce / 1000.0 << " s" << std::endl;
+        // Running SlotToCoeff
+        TIC(t);
+#endif
+
+        //------------------------------------------------------------------------------
+        // Running SlotToCoeff
+        //------------------------------------------------------------------------------
+
+        // In the case of FLEXIBLEAUTO, we need one extra tower
+        // TODO: See if we can remove the extra level in FLEXIBLEAUTO
+        if (st != FIXEDMANUAL)
+            algo->ModReduceInternalInPlace(ctxtEnc, compositeDegree);
+
+        // Only one linear transform is needed
+        ctxtDec = (isLTBootstrap) ? EvalLinearTransform(p.m_U0Pre, ctxtEnc) : EvalSlotsToCoeffs(p.m_U0PreFFT, ctxtEnc);
+
+        ctxtDec->GetCryptoContext()->Decrypt(key_pair.secretKey, ctxtDec, &ptxt);
+        std::cout << "finish StoC : " << ptxt << std::endl;
+    }
+    else {
+        //------------------------------------------------------------------------------
+        // SPARSELY PACKED CASE
+        //------------------------------------------------------------------------------
+
+        //------------------------------------------------------------------------------
+        // Running PartialSum
+        //------------------------------------------------------------------------------
+
+        for (uint32_t j = 1; j < N / (2 * slots); j <<= 1)
+            cc->EvalAddInPlaceNoCheck(raised, cc->EvalRotate(raised, j * slots));
+
+#ifdef BOOTSTRAPTIMING
+        TIC(t);
+#endif
+
+        //------------------------------------------------------------------------------
+        // Running CoeffsToSlots
+        //------------------------------------------------------------------------------
+
+        algo->ModReduceInternalInPlace(raised, compositeDegree);
+
+        auto ctxtEnc =
+            (isLTBootstrap) ? EvalLinearTransform(p.m_U0hatTPre, raised) : EvalCoeffsToSlots(p.m_U0hatTPreFFT, raised);
+
+        auto evalKeyMap = cc->GetEvalAutomorphismKeyMap(ctxtEnc->GetKeyTag());
+        auto conj       = Conjugate(ctxtEnc, evalKeyMap);
+        cc->EvalAddInPlaceNoCheck(ctxtEnc, conj);
+
+        if (st == FIXEDMANUAL) {
+            while (ctxtEnc->GetNoiseScaleDeg() > 1) {
+                cc->ModReduceInPlace(ctxtEnc);
+            }
+        }
+        else {
+            if (ctxtEnc->GetNoiseScaleDeg() == 2) {
+                algo->ModReduceInternalInPlace(ctxtEnc, compositeDegree);
+            }
+        }
+
+#ifdef BOOTSTRAPTIMING
+        timeEncode = TOC(t);
+        std::cerr << "\nEncoding time: " << timeEncode / 1000.0 << " s" << std::endl;
+        // Running Approximate Mod Reduction
+        TIC(t);
+#endif
+
+        //------------------------------------------------------------------------------
+        // Running Approximate Mod Reduction
+        //------------------------------------------------------------------------------
+
+        std::cerr << "Sparse cheby fake:)" << std::endl;
+        // Evaluate Chebyshev series for the sine wave
+        std::vector<double> coeffs_fake;
+        for (int i = 0; i < coefficients.size(); i++) {
+            coeffs_fake.push_back(0);
+        }
+
+        Plaintext ptxt;
+
+        ctxtEnc->GetCryptoContext()->Decrypt(key_pair.secretKey, ctxtEnc, &ptxt);
+        std::cout << "P prima di cheby: " << ptxt << std::endl;
+
+        coeffs_fake[0] = 0;
+        coeffs_fake[1] = 1;
+
+        ctxtEnc = cc->EvalChebyshevSeries(ctxtEnc, coefficients, coeffLowerBound, coeffUpperBound);
+
+        // Double-angle iterations
+        if (st != FIXEDMANUAL)
+            algo->ModReduceInternalInPlace(ctxtEnc, compositeDegree);
+        uint32_t numIter = (cryptoParams->GetSecretKeyDist() == UNIFORM_TERNARY) ? R_UNIFORM : R_SPARSE;
+        ApplyDoubleAngleIterations(ctxtEnc, numIter);
+
+        // TODO: YSP Can be extended to FLEXIBLE* scaling techniques as well as the closeness of 2^p to moduli is no longer needed
+        if (st != COMPOSITESCALINGAUTO && st != COMPOSITESCALINGMANUAL) {
+            // scale the message back up after Chebyshev interpolation
+            std::cerr << scalar << std::endl;
+            algo->MultByIntegerInPlace(ctxtEnc, scalar);
+        }
+
+
+#ifdef BOOTSTRAPTIMING
+        timeModReduce = TOC(t);
+        std::cerr << "Approximate modular reduction time: " << timeModReduce / 1000.0 << " s" << std::endl;
+        // Running SlotToCoeff
+        TIC(t);
+#endif
+
+        //------------------------------------------------------------------------------
+        // Running SlotsToCoeffs
+        //------------------------------------------------------------------------------
+
+        // In the case of FLEXIBLEAUTO, we need one extra tower
+        // TODO: See if we can remove the extra level in FLEXIBLEAUTO
+        if (st != FIXEDMANUAL) {
+            algo->ModReduceInternalInPlace(ctxtEnc, compositeDegree);
+        }
+
+        // linear transform for decoding
+        std::cerr << isLTBootstrap << std::endl;
+        ctxtDec = (isLTBootstrap) ? EvalLinearTransform(p.m_U0Pre, ctxtEnc) : EvalSlotsToCoeffs(p.m_U0PreFFT, ctxtEnc);
+        cc->EvalAddInPlaceNoCheck(ctxtDec, cc->EvalRotate(ctxtDec, slots));
+    }
+
+#if NATIVEINT != 128
+    // 64-bit only: scale back the message to its original scale.
+    uint64_t corFactor = static_cast<uint64_t>(1) << std::llround(correction);
+    algo->MultByIntegerInPlace(ctxtDec, corFactor);
+    std::cout << "corFactor: " << corFactor << std::endl;
+    Plaintext ptxt;
+    ctxtDec->GetCryptoContext()->Decrypt(key_pair.secretKey, ctxtDec, &ptxt);
+    std::cout << "dopo cor : " << ptxt << std::endl;
+
+
+#endif
+
+#ifdef BOOTSTRAPTIMING
+    timeDecode = TOC(t);
+
+    std::cout << "Decoding time: " << timeDecode / 1000.0 << " s" << std::endl;
+#endif
+
+    // If we start with more towers, than we obtain from bootstrapping, return the original ciphertext.
+    if (ctxtDec->GetElements()[0].GetNumOfElements() <= initSizeQ)
+        return ciphertext->Clone();
+    return ctxtDec;
+}
+
 Ciphertext<DCRTPoly> FHECKKSRNS::EvalBootstrap(ConstCiphertext<DCRTPoly>& ciphertext, uint32_t numIterations,
                                                uint32_t precision) const {
     const auto cryptoParams = std::dynamic_pointer_cast<CryptoParametersCKKSRNS>(ciphertext->GetCryptoParameters());

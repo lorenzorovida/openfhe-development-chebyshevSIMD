@@ -3644,6 +3644,10 @@ public:
         return GetScheme()->EvalBootstrap(ciphertext, numIterations, precision);
     }
 
+    Ciphertext<Element> EvalBootstrapBinary(ConstCiphertext<Element>& ciphertext, KeyPair<DCRTPoly> key_pair) const {
+        return GetScheme()->EvalBootstrapBinary(ciphertext, key_pair);
+    }
+
     template <typename VectorDataType>
     void EvalFBTSetup(const std::vector<VectorDataType>& coeffs, uint32_t numSlots, const BigInteger& PIn,
                       const BigInteger& POut, const BigInteger& Bigq, const PublicKey<DCRTPoly>& pubKey,

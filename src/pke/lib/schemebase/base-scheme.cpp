@@ -143,6 +143,7 @@ Ciphertext<Element> SchemeBase<Element>::EvalInnerProduct(ConstCiphertext<Elemen
 
     auto result = m_AdvancedSHE->EvalInnerProduct(ciphertext1, ciphertext2, batchSize, evalSumKeyMap, evalMultKey);
     result->SetKeyTag(evalSumKeyMap.begin()->second->GetKeyTag());
+
     return result;
 }
 
