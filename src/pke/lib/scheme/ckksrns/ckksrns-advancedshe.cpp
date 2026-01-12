@@ -1153,7 +1153,7 @@ static Ciphertext<DCRTPoly> InnerEvalChebyshevPSBatch(ConstCiphertext<DCRTPoly>&
     uint32_t compositeDegree =
         std::dynamic_pointer_cast<CryptoParametersCKKSRNS>(x->GetCryptoParameters())->GetCompositeDegree();
 
-    for (int i = 0; i < batchOfCoefficientsDouble.size(); i++) {
+    for (size_t i = 0; i < batchOfCoefficientsDouble.size(); i++) {
         // Compute k*2^{m-1}-k because we use it a lot
         uint32_t k2m2k = k * (1 << (m - 1)) - k;
 
@@ -1713,7 +1713,7 @@ static inline Ciphertext<DCRTPoly> internalEvalChebyshevSeriesPSBatchWithPrecomp
     // Compute k*2^{m-1}-k because we use it a lot
     uint32_t k2m2k = k * (1 << (m - 1)) - k;
 
-    for (uint32_t b = 0; b < batchOfCoefficientsDouble.size(); b++) {
+    for (size_t b = 0; b < batchOfCoefficientsDouble.size(); b++) {
         auto f2 = batchOfCoefficientsDouble[b];
         auto n  = Degree(f2);
         f2.resize(n + 1);
