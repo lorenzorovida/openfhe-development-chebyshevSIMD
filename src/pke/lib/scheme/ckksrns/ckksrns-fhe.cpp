@@ -722,7 +722,7 @@ Ciphertext<DCRTPoly> FHECKKSRNS::EvalBootstrapBinary(ConstCiphertext<DCRTPoly>& 
         std::cerr << "Sparse cheby fake:)" << std::endl;
         // Evaluate Chebyshev series for the sine wave
         std::vector<double> coeffs_fake;
-        for (int i = 0; i < coefficients.size(); i++) {
+        for (size_t i = 0; i < coefficients.size(); i++) {
             coeffs_fake.push_back(0);
         }
 
