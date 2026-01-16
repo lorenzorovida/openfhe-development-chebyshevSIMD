@@ -1236,6 +1236,16 @@ public:
         return m_FHE->EvalHermiteTrigSeries(ciphertext, coefficientsCheb, a, b, coefficientsHerm, precomp);
     }
 
+    uint32_t GetCKKSBootCorrectionFactor() {
+        VerifyFHEEnabled(__func__);
+        return m_FHE->GetCKKSBootCorrectionFactor();
+    }
+
+    void SetCKKSBootCorrectionFactor(uint32_t cf) {
+        VerifyFHEEnabled(__func__);
+        return m_FHE->SetCKKSBootCorrectionFactor(cf);
+    }
+
     // SCHEMESWITCHING methods
 
     LWEPrivateKey EvalCKKStoFHEWSetup(const SchSwchParams& params) {

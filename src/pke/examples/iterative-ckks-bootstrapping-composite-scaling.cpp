@@ -68,7 +68,7 @@ double CalculateApproximationError(const std::vector<std::complex<double>>& resu
     // using the infinity norm
     double maxError = 0;
     for (size_t i = 0; i < result.size(); ++i) {
-        double error = std::abs(result[i].real() - expectedResult[i].real());
+        double error = std::abs(result[i] - expectedResult[i]);
         if (maxError < error)
             maxError = error;
     }

@@ -46,6 +46,11 @@ Specifically, we used this to choose the default correction factor for 64-bit FL
 
 using namespace lbcrypto;
 
+constexpr ScalingTechnique rescaleTech = FLEXIBLEAUTOEXT;
+// constexpr ScalingTechnique rescaleTech = FIXEDMANUAL;
+
+constexpr uint32_t ringdm = 1 << 12;
+
 double MeasureBootstrapPrecision(uint32_t numSlots, uint32_t correctionFactor);
 double MeasureStCFirstBootstrapPrecision(uint32_t numSlots, uint32_t correctionFactor);
 std::vector<double> MeasureBootstrapDoubleIterPrecision(uint32_t numSlots, uint32_t correctionFactor);
@@ -59,7 +64,7 @@ double CalculateApproximationError(const std::vector<std::complex<double>>& resu
     // using the Euclidean norm
     double avrg = 0;
     for (size_t i = 0; i < result.size(); ++i) {
-        avrg += std::pow(std::abs(result[i].real() - expectedResult[i].real()), 2);
+        avrg += std::pow(std::abs(result[i] - expectedResult[i]), 2);
     }
 
     avrg = std::sqrt(avrg) / result.size();  // get the average
@@ -69,13 +74,15 @@ double CalculateApproximationError(const std::vector<std::complex<double>>& resu
 int main(int argc, char* argv[]) {
 #if NATIVEINT == 64
     uint32_t numIterations         = 10;
+    uint32_t minCorrectionFactor   = 5;
     uint32_t maxCorrectionFactor   = 15;
     std::vector<uint32_t> slotsVec = {1 << 3, 1 << 7, 1 << 9, 1 << 11};
     for (uint32_t numSlots : slotsVec) {
-        for (uint32_t correctionFactor = 5; correctionFactor <= maxCorrectionFactor; ++correctionFactor) {
+        for (uint32_t correctionFactor = minCorrectionFactor; correctionFactor <= maxCorrectionFactor; ++correctionFactor) {
             std::cout << "`=======================================================================\n";
             std::cout << "Number of slots: " << numSlots << "\n";
             std::cout << "Correction Factor: " << correctionFactor << "\n";
+
             double precision  = 0.0;
 #ifdef DOUBLEITTR
             double precision2 = 0.0;
@@ -116,9 +123,8 @@ double MeasureBootstrapPrecision(uint32_t numSlots, uint32_t correctionFactor) {
     parameters.SetSecretKeyDist(secretKeyDist);
 
     parameters.SetSecurityLevel(HEStd_NotSet);
-    parameters.SetRingDim(1 << 12);
+    parameters.SetRingDim(ringdm);
 
-    ScalingTechnique rescaleTech = FLEXIBLEAUTOEXT;
     uint32_t dcrtBits               = 59;
     uint32_t firstMod               = 60;
     parameters.SetScalingModSize(dcrtBits);
@@ -181,9 +187,8 @@ double MeasureStCFirstBootstrapPrecision(uint32_t numSlots, uint32_t correctionF
     parameters.SetSecretKeyDist(secretKeyDist);
 
     parameters.SetSecurityLevel(HEStd_NotSet);
-    parameters.SetRingDim(1 << 12);
+    parameters.SetRingDim(ringdm);
 
-    ScalingTechnique rescaleTech = FLEXIBLEAUTOEXT;
     uint32_t dcrtBits               = 59;
     uint32_t firstMod               = 60;
     parameters.SetScalingModSize(dcrtBits);
@@ -244,9 +249,8 @@ std::vector<double> MeasureBootstrapDoubleIterPrecision(uint32_t numSlots, uint3
     parameters.SetSecretKeyDist(secretKeyDist);
 
     parameters.SetSecurityLevel(HEStd_NotSet);
-    parameters.SetRingDim(1 << 12);
+    parameters.SetRingDim(ringdm);
 
-    ScalingTechnique rescaleTech = FIXEDMANUAL;
     uint32_t dcrtBits               = 59;
     uint32_t firstMod               = 60;
     parameters.SetScalingModSize(dcrtBits);
@@ -307,7 +311,8 @@ std::vector<double> MeasureBootstrapDoubleIterPrecision(uint32_t numSlots, uint3
 
     Plaintext resultTwoIterations;
     cryptoContext->Decrypt(keyPair.secretKey, ciphertextTwoIterations, &resultTwoIterations);
-    result->SetLength(numSlots);
+    resultTwoIterations->SetLength(numSlots);
+
     double precisionMultipleIterations =
         CalculateApproximationError(resultTwoIterations->GetCKKSPackedValue(), ptxt->GetCKKSPackedValue());
 
@@ -323,9 +328,8 @@ std::vector<double> MeasureStCFirstBootstrapDoubleIterPrecision(uint32_t numSlot
     parameters.SetSecretKeyDist(secretKeyDist);
 
     parameters.SetSecurityLevel(HEStd_NotSet);
-    parameters.SetRingDim(1 << 12);
+    parameters.SetRingDim(ringdm);
 
-    ScalingTechnique rescaleTech = FIXEDMANUAL;
     uint32_t dcrtBits               = 59;
     uint32_t firstMod               = 60;
     parameters.SetScalingModSize(dcrtBits);
@@ -386,7 +390,8 @@ std::vector<double> MeasureStCFirstBootstrapDoubleIterPrecision(uint32_t numSlot
 
     Plaintext resultTwoIterations;
     cryptoContext->Decrypt(keyPair.secretKey, ciphertextTwoIterations, &resultTwoIterations);
-    result->SetLength(numSlots);
+    resultTwoIterations->SetLength(numSlots);
+
     double precisionMultipleIterations =
         CalculateApproximationError(resultTwoIterations->GetCKKSPackedValue(), ptxt->GetCKKSPackedValue());
 

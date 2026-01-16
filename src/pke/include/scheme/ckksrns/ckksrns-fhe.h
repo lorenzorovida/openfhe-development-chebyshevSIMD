@@ -304,6 +304,14 @@ public:
         return "FHECKKSRNS";
     }
 
+    uint32_t GetCKKSBootCorrectionFactor() const override {
+        return m_correctionFactor;
+    }
+
+    void SetCKKSBootCorrectionFactor(uint32_t cf) override {
+        m_correctionFactor = cf;
+    }
+
 private:
     CKKSBootstrapPrecom& GetBootPrecom(uint32_t slots) const {
         auto pair = m_bootPrecomMap.find(slots);

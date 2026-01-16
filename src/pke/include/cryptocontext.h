@@ -3583,6 +3583,7 @@ public:
                             bool BTSlotsEncoding = false) {
         GetScheme()->EvalBootstrapSetup(*this, levelBudget, dim1, slots, correctionFactor, precompute, BTSlotsEncoding);
     }
+
     /**
     * @brief Generates automorphism keys for EvalBootstrap. Uses baby-step/giant-step strategy. Supported only in CKKS.
     *
@@ -3679,6 +3680,14 @@ public:
                                               double b, const std::vector<VectorDataType>& coefficientsHerm,
                                               size_t precomp = 0) {
         return GetScheme()->EvalHermiteTrigSeries(ciphertext, coefficientsCheb, a, b, coefficientsHerm, precomp);
+    }
+
+    uint32_t GetCKKSBootCorrectionFactor() {
+        return GetScheme()->GetCKKSBootCorrectionFactor();
+    }
+
+    void SetCKKSBootCorrectionFactor(uint32_t cf) {
+        return GetScheme()->SetCKKSBootCorrectionFactor(cf);
     }
 
     //------------------------------------------------------------------------------

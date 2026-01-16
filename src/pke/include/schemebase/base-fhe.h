@@ -237,6 +237,14 @@ public:
         OPENFHE_THROW(NOT_SUPPORTED_SIMPLE_ERROR);
     }
 
+    virtual uint32_t GetCKKSBootCorrectionFactor() const {
+        OPENFHE_THROW(NOT_SUPPORTED_SIMPLE_ERROR);
+    }
+
+    virtual void SetCKKSBootCorrectionFactor(uint32_t cf) {
+        OPENFHE_THROW(NOT_SUPPORTED_SIMPLE_ERROR);
+    }
+
     /**
    * Sets all parameters for switching from CKKS to FHEW
    *
