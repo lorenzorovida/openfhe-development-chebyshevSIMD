@@ -77,6 +77,7 @@ double CalculateApproximationError(const std::vector<std::complex<double>>& resu
 }
 
 void IterativeBootstrapExample() {
+    std::cout << "***CKKS Bootstrapping Variant with ModRaise-first step***\n\n";
     // Step 1: Set CryptoContext
     CCParams<CryptoContextCKKSRNS> parameters;
     SecretKeyDist secretKeyDist = UNIFORM_TERNARY;
@@ -169,8 +170,7 @@ void IterativeBootstrapExample() {
     uint32_t precision =
         std::floor(CalculateApproximationError(result->GetCKKSPackedValue(), ptxt->GetCKKSPackedValue()));
     std::cout << "Bootstrapping precision after 1 iteration: " << precision << "\n\n";
-
-    // Set precision equal to empirically measured value after many test runs.
+    // Set precision equal to empirically measured value after many test runs. One could add a buffer to reduce this value as below.
     precision -= 5;
     std::cout << "Precision input to 2 iteration: " << precision << "\n";
 
@@ -188,10 +188,12 @@ void IterativeBootstrapExample() {
     // Output the precision of bootstrapping after two iterations. It should be approximately double the original precision.
     std::cout << "Bootstrapping precision after 2 iterations: " << precisionMultipleIterations << "\n";
     std::cout << "Number of levels remaining after 2 bootstrappings: "
-              << depth - ciphertextTwoIterations->GetLevel() - (ciphertextTwoIterations->GetNoiseScaleDeg() - 1) << "\n\n";
+              << depth - ciphertextTwoIterations->GetLevel() - (ciphertextTwoIterations->GetNoiseScaleDeg() - 1)
+              << "\n\n";
 }
 
 void IterativeBootstrapStcExample() {
+    std::cout << "***CKKS Bootstrapping Variant with SlotsToCoefficients-first step***\n\n";
     // Step 1: Set CryptoContext
     CCParams<CryptoContextCKKSRNS> parameters;
     SecretKeyDist secretKeyDist = UNIFORM_TERNARY;
@@ -286,9 +288,9 @@ void IterativeBootstrapStcExample() {
         std::floor(CalculateApproximationError(result->GetCKKSPackedValue(), ptxt->GetCKKSPackedValue()));
     std::cout << "Bootstrapping precision after 1 iteration: " << precision << "\n\n";
 
-    // Set precision equal to empirically measured value after many test runs.
+    // Set precision equal to empirically measured value after many test runs. One could add a buffer to reduce this value as below.
     precision -= 5;
-    std::cout << "Precision input to 2 iteration: " << precision << "\n";
+    std::cout << "Precision input to 2nd iteration: " << precision << "\n";
 
     // Step 6: Run bootstrapping with multiple iterations.
     auto ciphertextTwoIterations = cryptoContext->EvalBootstrap(ciph, numIterations, precision);
@@ -304,23 +306,28 @@ void IterativeBootstrapStcExample() {
     // Output the precision of bootstrapping after two iterations. It should be approximately double the original precision.
     std::cout << "Bootstrapping precision after 2 iterations: " << precisionMultipleIterations << "\n";
     std::cout << "Number of levels remaining after 2 bootstrappings: "
-              << depth - ciphertextTwoIterations->GetLevel() - (ciphertextTwoIterations->GetNoiseScaleDeg() - 1) << "\n\n";
+              << depth - ciphertextTwoIterations->GetLevel() - (ciphertextTwoIterations->GetNoiseScaleDeg() - 1)
+              << "\n\n";
 
     //---------------------------------------------------------------------------------------------------------------------
     // When using EvalBootstrap for 2 iterations with STC first, it may be beneficial to scale down the default correction
-    // factor to achieve a higher final precision.
+    // factor to achieve a higher final precision. This behavior is specifically pronounced for sparse packing. As the
+    // number of slots increases, the difference between the default correction factor and the best empirical correction
+    // factor decreases. For full packing at full security for CKKS bootstrapping, this variant of CKKS bootstrapping
+    // has better precision than the ModRaise-first variant without any change to the default correction factor.
 
     cryptoContext->SetCKKSBootCorrectionFactor(cryptoContext->GetCKKSBootCorrectionFactor() - 5);
     std::cout << "Correction factor used: " << cryptoContext->GetCKKSBootCorrectionFactor() << "\n";
 
     ciphertextAfter = cryptoContext->EvalBootstrap(ciph);
     cryptoContext->Decrypt(keyPair.secretKey, ciphertextAfter, &result);
+    result->SetLength(numSlots);
     precision = std::floor(CalculateApproximationError(result->GetCKKSPackedValue(), ptxt->GetCKKSPackedValue()));
     std::cout << "Bootstrapping precision after 1 iteration: " << precision << "\n\n";
 
-    // Set precision equal to empirically measured value after many test runs.
+    // Set precision equal to empirically measured value after many test runs. One could add a buffer to reduce this value as below.
     precision -= 5;
-    std::cout << "Precision input to 2 iteration: " << precision << "\n";
+    std::cout << "Precision input to 2nd iteration: " << precision << "\n";
 
     ciphertextTwoIterations = cryptoContext->EvalBootstrap(ciph, numIterations, precision);
     cryptoContext->Decrypt(keyPair.secretKey, ciphertextTwoIterations, &resultTwoIterations);
@@ -332,6 +339,6 @@ void IterativeBootstrapStcExample() {
     // Output the precision of bootstrapping after two iterations. It should be approximately double the original precision.
     std::cout << "Bootstrapping precision after 2 iterations: " << precisionMultipleIterations << "\n";
     std::cout << "Number of levels remaining after 2 bootstrappings: "
-              << depth - ciphertextTwoIterations->GetLevel() - (ciphertextTwoIterations->GetNoiseScaleDeg() - 1) << "\n\n";
-
+              << depth - ciphertextTwoIterations->GetLevel() - (ciphertextTwoIterations->GetNoiseScaleDeg() - 1)
+              << "\n\n";
 }

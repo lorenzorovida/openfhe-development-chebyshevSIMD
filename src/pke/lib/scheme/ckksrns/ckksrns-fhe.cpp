@@ -104,17 +104,14 @@ void FHECKKSRNS::EvalBootstrapSetup(const CryptoContextImpl<DCRTPoly>& cc, std::
             // The default correction factors chosen yielded the best precision in our experiments.
             // We chose the best fit line from our experiments by running ckks-bootstrapping-precision.cpp.
             // The spreadsheet with our experiments is here:
-            // https://docs.google.com/spreadsheets/d/1WqmwBUMNGlX6Uvs9qLXt5yeddtCyWPP55BbJPu5iPAM/edit?usp=sharing
-            // AA: update spreadsheet
-            uint32_t tmp       = BTSlotsEncoding ?
-                                     std::round(-0.1887 * (2 * std::log2(M / 2) + std::log2(slots)) + 18.763) :
-                                     std::round(-0.265 * (2 * std::log2(M / 2) + std::log2(slots)) + 19.1);
+            // https://docs.google.com/spreadsheets/d/1p6-ZG9rBEE9SrkKIt0JjU1aJiYHevzblKOTuhLFW27U
+            uint32_t tmp = BTSlotsEncoding ? std::round(-0.1887 * (2 * std::log2(M / 2) + std::log2(slots)) + 18.763) :
+                                             std::round(-0.265 * (2 * std::log2(M / 2) + std::log2(slots)) + 19.1);
             m_correctionFactor = std::clamp<uint32_t>(tmp, 7, 14);
         }
         else {
-            uint32_t tmp       = BTSlotsEncoding ?
-                                     std::round(-0.108 * (2 * std::log2(M / 2) + std::log2(slots)) + 14.069) :
-                                     std::round(-0.1871 * (2 * std::log2(M / 2) + std::log2(slots)) + 14.829);
+            uint32_t tmp = BTSlotsEncoding ? std::round(-0.108 * (2 * std::log2(M / 2) + std::log2(slots)) + 14.069) :
+                                             std::round(-0.1871 * (2 * std::log2(M / 2) + std::log2(slots)) + 14.829);
             m_correctionFactor = std::clamp<uint32_t>(tmp, 6, 13);
         }
     }
@@ -122,7 +119,7 @@ void FHECKKSRNS::EvalBootstrapSetup(const CryptoContextImpl<DCRTPoly>& cc, std::
         m_correctionFactor = correctionFactor;
     }
 
-    m_bootPrecomMap[slots] = std::make_shared<CKKSBootstrapPrecom>();
+    m_bootPrecomMap[slots]  = std::make_shared<CKKSBootstrapPrecom>();
     auto& precom            = m_bootPrecomMap[slots];
     precom->m_slots         = slots;
     precom->BTSlotsEncoding = BTSlotsEncoding;
