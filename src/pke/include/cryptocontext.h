@@ -632,6 +632,11 @@ public:
     }
 
     /**
+    * @brief Clears various caches within the library
+    */
+    static void ClearStaticMapsAndVectors();
+
+    /**
     * @brief Serializes either all EvalMult keys (if keyTag is empty) or the EvalMult keys for keyTag
     *
     * @param ser stream to serialize to
@@ -3613,11 +3618,14 @@ public:
     * @param slots            Number of slots to be bootstrapped.
     * @param correctionFactor Internal rescaling factor to improve precision (only for NATIVE_SIZE=64; 0 = default).
     * @param precompute       Whether to precompute plaintexts for encoding/decoding.
+    * @param BTSlotsEncoding  Whether the approximate modular reduction happens over the message being in slots or coefficients
     */
     void EvalBootstrapSetup(std::vector<uint32_t> levelBudget = {5, 4}, std::vector<uint32_t> dim1 = {0, 0},
-                            uint32_t slots = 0, uint32_t correctionFactor = 0, bool precompute = true) {
-        GetScheme()->EvalBootstrapSetup(*this, levelBudget, dim1, slots, correctionFactor, precompute);
+                            uint32_t slots = 0, uint32_t correctionFactor = 0, bool precompute = true,
+                            bool BTSlotsEncoding = false) {
+        GetScheme()->EvalBootstrapSetup(*this, levelBudget, dim1, slots, correctionFactor, precompute, BTSlotsEncoding);
     }
+
     /**
     * @brief Generates automorphism keys for EvalBootstrap. Uses baby-step/giant-step strategy. Supported only in CKKS.
     *
@@ -3652,8 +3660,9 @@ public:
         return GetScheme()->EvalBootstrap(ciphertext, numIterations, precision);
     }
 
-    Ciphertext<Element> EvalBootstrapBinary(ConstCiphertext<Element>& ciphertext, KeyPair<DCRTPoly> key_pair) const {
-        return GetScheme()->EvalBootstrapBinary(ciphertext, key_pair);
+    Ciphertext<Element> EvalBootstrapStCFirst(ConstCiphertext<Element>& ciphertext, uint32_t numIterations = 1,
+                                              uint32_t precision = 0) const {
+        return GetScheme()->EvalBootstrapStCFirst(ciphertext, numIterations, precision);
     }
 
     template <typename VectorDataType>
@@ -3713,6 +3722,14 @@ public:
                                               double b, const std::vector<VectorDataType>& coefficientsHerm,
                                               size_t precomp = 0) {
         return GetScheme()->EvalHermiteTrigSeries(ciphertext, coefficientsCheb, a, b, coefficientsHerm, precomp);
+    }
+
+    uint32_t GetCKKSBootCorrectionFactor() {
+        return GetScheme()->GetCKKSBootCorrectionFactor();
+    }
+
+    void SetCKKSBootCorrectionFactor(uint32_t cf) {
+        return GetScheme()->SetCKKSBootCorrectionFactor(cf);
     }
 
     //------------------------------------------------------------------------------

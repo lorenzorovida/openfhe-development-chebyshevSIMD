@@ -223,7 +223,7 @@ class UTCKKSRNSCS_BOOT : public ::testing::TestWithParam<TEST_CASE_UTCKKSRNSCS_B
         // using the infinity norm
         double maxError = 0;
         for (size_t i = 0; i < result.size(); ++i) {
-            double error = std::abs(result[i].real() - expectedResult[i].real());
+            double error = std::abs(result[i] - expectedResult[i]);
             if (maxError < error)
                 maxError = error;
         }
@@ -238,11 +238,12 @@ protected:
         CryptoContextFactory<DCRTPoly>::ReleaseAllContexts();
     }
 
-    void UnitTest_Bootstrap(const TEST_CASE_UTCKKSRNSCS_BOOT& testData, const std::string& failmsg = std::string()) {
+    void UnitTest_Bootstrap(const TEST_CASE_UTCKKSRNSCS_BOOT& testData, const bool StCFlag,
+                            const std::string& failmsg = std::string()) {
         try {
             CryptoContext<Element> cc(UnitTestGenerateContext(testData.params));
 
-            cc->EvalBootstrapSetup(testData.levelBudget, testData.dim1, testData.slots);
+            cc->EvalBootstrapSetup(testData.levelBudget, testData.dim1, testData.slots, 0, true, StCFlag);
 
             auto keyPair = cc->KeyGen();
             cc->EvalBootstrapKeyGen(keyPair.secretKey, testData.slots);
@@ -263,7 +264,8 @@ protected:
             auto cryptoParams = std::dynamic_pointer_cast<CryptoParametersCKKSRNS>(cc->GetCryptoParameters());
 
             Plaintext plaintext1 = cc->MakeCKKSPackedPlaintext(
-                input, 1, cryptoParams->GetCompositeDegree() * (MULT_DEPTH - 1), nullptr, testData.slots);
+                input, 1, cryptoParams->GetCompositeDegree() * (MULT_DEPTH - 1 - testData.levelBudget[1]), nullptr,
+                testData.slots);
             auto ciphertext1     = cc->Encrypt(keyPair.publicKey, plaintext1);
             auto ciphertextAfter = cc->EvalBootstrap(ciphertext1);
 
@@ -613,7 +615,9 @@ TEST_P(UTCKKSRNSCS_BOOT, CKKSRNS) {
         case BOOTSTRAP_FULL:
         case BOOTSTRAP_EDGE:
         case BOOTSTRAP_SPARSE:
-            UnitTest_Bootstrap(test, test.buildTestName());
+            UnitTest_Bootstrap(test, false, test.buildTestName());
+            // TODO: enable following test once STC Composite Scaling operational
+            // UnitTest_Bootstrap(test, true, test.buildTestName());
             break;
         case BOOTSTRAP_KEY_SWITCH:
             UnitTest_Bootstrap_KeySwitching(test, test.buildTestName());

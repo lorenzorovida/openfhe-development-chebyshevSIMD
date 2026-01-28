@@ -1912,7 +1912,7 @@ double UTCKKSRNSCS::CalculateApproximationError<double>(const std::vector<std::c
     // using the Euclidean norm
     double avrg = 0;
     for (size_t i = 0; i < result.size(); ++i) {
-        avrg += std::pow(std::abs(result[i].real() - expectedResult[i].real()), 2);
+        avrg += std::pow(std::abs(result[i] - expectedResult[i]), 2);
     }
 
     avrg = std::sqrt(avrg) / result.size();  // get the average

@@ -103,8 +103,7 @@ LWEPublicKey LWEEncryptionScheme::PubKeyGen(const std::shared_ptr<LWECryptoParam
 LWECiphertext LWEEncryptionScheme::Encrypt(const std::shared_ptr<LWECryptoParams>& params, ConstLWEPrivateKey& sk,
                                            LWEPlaintext m, LWEPlaintextModulus p, NativeInteger mod) const {
     if (mod % p != 0 && mod.ConvertToInt() & (1 == 0)) {
-        std::string errMsg = "ERROR: ciphertext modulus q needs to be divisible by plaintext modulus p.";
-        OPENFHE_THROW(errMsg);
+        OPENFHE_THROW("Ciphertext modulus q needs to be divisible by plaintext modulus p.");
     }
 
     NativeVector s   = sk->GetElement();
@@ -133,8 +132,7 @@ LWECiphertext LWEEncryptionScheme::Encrypt(const std::shared_ptr<LWECryptoParams
 LWECiphertext LWEEncryptionScheme::EncryptN(const std::shared_ptr<LWECryptoParams>& params, ConstLWEPublicKey& pk,
                                             LWEPlaintext m, LWEPlaintextModulus p, NativeInteger mod) const {
     if (mod % p != 0 && mod.ConvertToInt() & (1 == 0)) {
-        std::string errMsg = "ERROR: ciphertext modulus q needs to be divisible by plaintext modulus p.";
-        OPENFHE_THROW(errMsg);
+        OPENFHE_THROW("Ciphertext modulus q needs to be divisible by plaintext modulus p.");
     }
 
     auto bp  = pk->Getv();
@@ -181,14 +179,20 @@ LWECiphertext LWEEncryptionScheme::SwitchCTtoqn(const std::shared_ptr<LWECryptoP
 // m_result = Round(4/q * (b - a*s))
 void LWEEncryptionScheme::Decrypt(const std::shared_ptr<LWECryptoParams>& params, ConstLWEPrivateKey& sk,
                                   ConstLWECiphertext& ct, LWEPlaintext* result, LWEPlaintextModulus p) const {
+    if (sk == nullptr)
+        OPENFHE_THROW("PrivateKey is empty");
+    else if (ct == nullptr)
+        OPENFHE_THROW("Ciphertext is empty");
+    else if (result == nullptr)
+        OPENFHE_THROW("result is nullptr");
+
     // TODO in the future we should add a check to make sure sk parameters match
     // the ct parameters
 
     // Create local variables to speed up the computations
     const auto& mod = ct->GetModulus();
     if (mod % (p * 2) != 0 && mod.ConvertToInt() & (1 == 0)) {
-        std::string errMsg = "ERROR: ciphertext modulus q needs to be divisible by plaintext modulus p*2.";
-        OPENFHE_THROW(errMsg);
+        OPENFHE_THROW("Ciphertext modulus q needs to be divisible by plaintext modulus p*2.");
     }
 
     const auto& a = ct->GetA();
@@ -301,9 +305,9 @@ LWESwitchingKey LWEEncryptionScheme::KeySwitchGen(const std::shared_ptr<LWECrypt
     std::vector<std::vector<std::vector<NativeVector>>> resultVecA(N);
     std::vector<std::vector<std::vector<NativeInteger>>> resultVecB(N);
 
-    // TODO (cpascoe/dsuponit): this pragma needs to be revised as it may have to be removed completely
+    // TODO: parallelize loop using fix from KeySwitchHYBRID::KeySwitchGenInternal
+
     // #if !defined(__MINGW32__) && !defined(__MINGW64__)
-    // #pragma omp parallel for num_threads(N)
     // #pragma omp parallel for num_threads(OpenFHEParallelControls.GetThreadLimit(N))
     // #endif
     for (size_t i = 0; i < N; ++i) {
@@ -377,7 +381,7 @@ LWECiphertext LWEEncryptionScheme::KeySwitch(const std::shared_ptr<LWECryptoPara
 LWECiphertext LWEEncryptionScheme::NoiselessEmbedding(const std::shared_ptr<LWECryptoParams>& params,
                                                       LWEPlaintext m) const {
     NativeInteger q(params->Getq());
-    return std::make_shared<LWECiphertextImpl>(NativeVector(params->Getn(), q), (q >> 2)*m);
+    return std::make_shared<LWECiphertextImpl>(NativeVector(params->Getn(), q), (q >> 2) * m);
 }
 
 };  // namespace lbcrypto

@@ -1,7 +1,7 @@
 //==================================================================================
 // BSD 2-Clause License
 //
-// Copyright (c) 2014-2022, NJIT, Duality Technologies Inc. and other contributors
+// Copyright (c) 2014-2025, NJIT, Duality Technologies Inc. and other contributors
 //
 // All rights reserved.
 //
@@ -63,23 +63,13 @@ public:
 
     CKKSBootstrapPrecom(CKKSBootstrapPrecom&& rhs) noexcept = default;
 
-    // number of slots for which the bootstrapping is performed
-    uint32_t m_slots;
-
-    // the inner dimension in the baby-step giant-step strategy
-    uint32_t m_dim1;
-    uint32_t m_gs;
-
-    uint32_t m_levelEnc;
-    uint32_t m_levelDec;
-
     // level budget for homomorphic encoding, number of layers to collapse in one level,
     // number of layers remaining to be collapsed in one level to have exactly the number
     // of levels specified in the level budget, the number of rotations in one level,
     // the baby step and giant step in the baby-step giant-step strategy, the number of
     // rotations in the remaining level, the baby step and giant step in the baby-step
     // giant-step strategy for the remaining level
-    std::vector<int32_t> m_paramsEnc = std::vector<int32_t>(CKKS_BOOT_PARAMS::TOTAL_ELEMENTS);
+    struct ckks_boot_params m_paramsEnc;
 
     // level budget for homomorphic decoding, number of layers to collapse in one level,
     // number of layers remaining to be collapsed in one level to have exactly the number
@@ -87,7 +77,10 @@ public:
     // the baby step and giant step in the baby-step giant-step strategy, the number of
     // rotations in the remaining level, the baby step and giant step in the baby-step
     // giant-step strategy for the remaining level
-    std::vector<int32_t> m_paramsDec = std::vector<int32_t>(CKKS_BOOT_PARAMS::TOTAL_ELEMENTS);
+    struct ckks_boot_params m_paramsDec;
+
+    // number of slots for which the bootstrapping is performed
+    uint32_t m_slots;
 
     // Linear map U0; used in decoding
     std::vector<ReadOnlyPlaintext> m_U0Pre;
@@ -104,22 +97,27 @@ public:
     Ciphertext<DCRTPoly> m_precompExp;
     Ciphertext<DCRTPoly> m_precompExpI;
 
+    // flag indicating whether we perform StC before ModRaise
+    bool BTSlotsEncoding;
+
     template <class Archive>
     void save(Archive& ar) const {
-        ar(cereal::make_nvp("dim1_Enc", m_dim1));
-        ar(cereal::make_nvp("dim1_Dec", m_paramsDec[CKKS_BOOT_PARAMS::GIANT_STEP]));
+        ar(cereal::make_nvp("dim1_Enc", m_paramsEnc.g));
+        ar(cereal::make_nvp("dim1_Dec", m_paramsDec.g));
         ar(cereal::make_nvp("slots", m_slots));
-        ar(cereal::make_nvp("lEnc", m_paramsEnc[CKKS_BOOT_PARAMS::LEVEL_BUDGET]));
-        ar(cereal::make_nvp("lDec", m_paramsDec[CKKS_BOOT_PARAMS::LEVEL_BUDGET]));
+        ar(cereal::make_nvp("lEnc", m_paramsEnc.lvlb));
+        ar(cereal::make_nvp("lDec", m_paramsDec.lvlb));
+        ar(cereal::make_nvp("BTSlotsEncoding", BTSlotsEncoding));
     }
 
     template <class Archive>
     void load(Archive& ar) {
-        ar(cereal::make_nvp("dim1_Enc", m_dim1));
-        ar(cereal::make_nvp("dim1_Dec", m_paramsDec[CKKS_BOOT_PARAMS::GIANT_STEP]));
+        ar(cereal::make_nvp("dim1_Enc", m_paramsEnc.g));
+        ar(cereal::make_nvp("dim1_Dec", m_paramsDec.g));
         ar(cereal::make_nvp("slots", m_slots));
-        ar(cereal::make_nvp("lEnc", m_paramsEnc[CKKS_BOOT_PARAMS::LEVEL_BUDGET]));
-        ar(cereal::make_nvp("lDec", m_paramsDec[CKKS_BOOT_PARAMS::LEVEL_BUDGET]));
+        ar(cereal::make_nvp("lEnc", m_paramsEnc.lvlb));
+        ar(cereal::make_nvp("lDec", m_paramsDec.lvlb));
+        ar(cereal::make_nvp("BTSlotsEncoding", BTSlotsEncoding));
     }
 };
 
@@ -146,8 +144,8 @@ public:
     //------------------------------------------------------------------------------
 
     void EvalBootstrapSetup(const CryptoContextImpl<DCRTPoly>& cc, std::vector<uint32_t> levelBudget,
-                            std::vector<uint32_t> dim1, uint32_t slots, uint32_t correctionFactor,
-                            bool precompute) override;
+                            std::vector<uint32_t> dim1, uint32_t slots, uint32_t correctionFactor, bool precompute,
+                            bool BTSlotsEncoding) override;
 
     std::shared_ptr<std::map<uint32_t, EvalKey<DCRTPoly>>> EvalBootstrapKeyGen(const PrivateKey<DCRTPoly> privateKey,
                                                                                uint32_t slots) override;
@@ -157,7 +155,8 @@ public:
     Ciphertext<DCRTPoly> EvalBootstrap(ConstCiphertext<DCRTPoly>& ciphertext, uint32_t numIterations,
                                        uint32_t precision) const override;
 
-    Ciphertext<DCRTPoly> EvalBootstrapBinary(ConstCiphertext<DCRTPoly>& ciphertext, KeyPair<DCRTPoly> key_pair) const override;
+    Ciphertext<DCRTPoly> EvalBootstrapStCFirst(ConstCiphertext<DCRTPoly>& ciphertext, uint32_t numIterations,
+                                               uint32_t precision) const override;
 
     void EvalFBTSetup(const CryptoContextImpl<DCRTPoly>& cc, const std::vector<std::complex<double>>& coefficients,
                       uint32_t numSlots, const BigInteger& PIn, const BigInteger& POut, const BigInteger& Bigq,
@@ -238,13 +237,15 @@ public:
                                                                             const std::vector<std::complex<double>>& A,
                                                                             const std::vector<uint32_t>& rotGroup,
                                                                             bool flag_i, double scale = 1,
-                                                                            uint32_t L = 0) const;
+                                                                            uint32_t L          = 0,
+                                                                            bool flagStCComplex = false) const;
 
     std::vector<std::vector<ReadOnlyPlaintext>> EvalSlotsToCoeffsPrecompute(const CryptoContextImpl<DCRTPoly>& cc,
                                                                             const std::vector<std::complex<double>>& A,
                                                                             const std::vector<uint32_t>& rotGroup,
                                                                             bool flag_i, double scale = 1,
-                                                                            uint32_t L = 0) const;
+                                                                            uint32_t L          = 0,
+                                                                            bool flagStCComplex = false) const;
 
     //------------------------------------------------------------------------------
     // EVALUATION: CoeffsToSlots and SlotsToCoeffs
@@ -303,6 +304,15 @@ public:
         return "FHECKKSRNS";
     }
 
+    uint32_t GetCKKSBootCorrectionFactor() const override {
+        return m_correctionFactor;
+    }
+
+    void SetCKKSBootCorrectionFactor(uint32_t cf) override {
+        m_correctionFactor = cf;
+    }
+
+private:
     CKKSBootstrapPrecom& GetBootPrecom(uint32_t slots) const {
         auto pair = m_bootPrecomMap.find(slots);
         if (pair != m_bootPrecomMap.end())
@@ -332,7 +342,7 @@ private:
                                        const CryptoContextImpl<DCRTPoly>& cc);
     static uint32_t GetModDepthInternal(SecretKeyDist secretKeyDist);
 
-    void AdjustCiphertext(Ciphertext<DCRTPoly>& ciphertext, double correction) const;
+    void AdjustCiphertext(Ciphertext<DCRTPoly>& ciphertext, double correction, uint32_t lvl, bool modReduce = true) const;
     void AdjustCiphertextFBT(Ciphertext<DCRTPoly>& ciphertext, double correction) const;
 
     void ExtendCiphertext(std::vector<DCRTPoly>& ciphertext, const CryptoContextImpl<DCRTPoly>& cc,
@@ -399,7 +409,7 @@ private:
                                                                       size_t order = 1);
 
     template <typename VectorDataType>
-    Ciphertext<DCRTPoly> EvalMVBNoDecodingInternal(std::shared_ptr<seriesPowers<DCRTPoly>> ciphertext,
+    Ciphertext<DCRTPoly> EvalMVBNoDecodingInternal(const std::shared_ptr<seriesPowers<DCRTPoly>>& ciphertext,
                                                    const std::vector<VectorDataType>& coefficients,
                                                    uint32_t digitBitSize, size_t order = 1);
 
