@@ -969,6 +969,14 @@ public:
         return m_AdvancedSHE->EvalChebyshevSeriesPSBatch(ciphertext, batchOfCoefficients, a, b);
     }
 
+    template <typename VectorDataType = double>
+    Ciphertext<Element> EvalChebyshevSeriesPSBatchRepeated(ConstCiphertext<Element>& ciphertext,
+                                                   const std::vector<std::vector<VectorDataType>>& batchOfCoefficients,
+                                                   double a, double b, int repetitions) const {
+        VerifyAdvancedSHEEnabled(__func__);
+        return m_AdvancedSHE->EvalChebyshevSeriesPSBatchRepeated(ciphertext, batchOfCoefficients, a, b, repetitions);
+    }
+
     /////////////////////////////////////
     // Advanced SHE EVAL SUM
     /////////////////////////////////////

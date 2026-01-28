@@ -2943,6 +2943,14 @@ public:
         return GetScheme()->EvalChebyshevSeriesPSBatch(ciphertext, batchOfCoefficients, a, b);
     }
 
+    template <typename VectorDataType = double>
+    Ciphertext<Element> EvalChebyshevSeriesPSBatchRepeated(ConstCiphertext<Element>& ciphertext,
+                                                   const std::vector<std::vector<VectorDataType>>& batchOfCoefficients, double a,
+                                                   double b, int repetitions) const {
+        ValidateCiphertext(ciphertext);
+        return GetScheme()->EvalChebyshevSeriesPSBatchRepeated(ciphertext, batchOfCoefficients, a, b, repetitions);
+    }
+
     /**
     * @brief Evaluates a smooth function on a ciphertext using Chebyshev polynomial approximation over [a, b].
     *        Supported only in CKKS.

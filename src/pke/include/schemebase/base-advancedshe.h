@@ -428,6 +428,22 @@ public:
                                                       double a, double b) const {
         OPENFHE_THROW("Not implemented for this scheme");
     }
+    virtual Ciphertext<Element> EvalChebyshevSeriesPSBatchRepeated(ConstCiphertext<Element>& ciphertext,
+                                                           const std::vector<std::vector<int64_t>>& batchOfCoefficients, double a,
+                                                           double b, int repetitions) const {
+        OPENFHE_THROW("Not implemented for this scheme");
+    }
+    virtual Ciphertext<Element> EvalChebyshevSeriesPSBatchRepeated(ConstCiphertext<Element>& ciphertext,
+                                                           const std::vector<std::vector<double>>& batchOfCoefficients, double a,
+                                                           double b, int repetitions) const {
+        OPENFHE_THROW("Not implemented for this scheme");
+    }
+    virtual Ciphertext<Element> EvalChebyshevSeriesPSBatchRepeated(ConstCiphertext<Element>& ciphertext,
+                                                           const std::vector<std::vector<std::complex<double>>>& batchOfCoefficients,
+                                                           double a, double b, int repetitions) const {
+        OPENFHE_THROW("Not implemented for this scheme");
+    }
+
 
     //------------------------------------------------------------------------------
     // Advanced SHE EVAL SUM

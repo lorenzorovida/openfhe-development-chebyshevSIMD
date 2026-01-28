@@ -203,8 +203,8 @@ bool CKKSPackedEncoding::Encode() {
         }
     }
     logc = (logc == std::numeric_limits<int32_t>::min()) ? 0 : logc;
-    if (logc < 0)
-        OPENFHE_THROW("Scaling factor too small");
+    //if (logc < 0)
+    //    OPENFHE_THROW("Scaling factor too small");
 
     // Compute approxFactor, a value to scale down by in case the value exceeds a 64-bit integer.
     constexpr int32_t MAX_BITS_IN_WORD = LargeScalingFactorConstants::MAX_BITS_IN_WORD;
