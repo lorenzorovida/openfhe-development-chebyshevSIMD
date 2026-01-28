@@ -105,8 +105,6 @@ static inline Ciphertext<DCRTPoly> internalEvalLinearWSumBatch(std::vector<ReadO
 }
 
 template <typename VectorDataType>
-static inline Ciphertext<DCRTPoly> internalEvalLinearWSumMutable(std::vector<Ciphertext<DCRTPoly>>& ciphertexts,
-                                                                 const std::vector<VectorDataType>& constants) {
 Ciphertext<DCRTPoly> internalEvalLinearWSumMutable(std::vector<Ciphertext<DCRTPoly>>& ciphertexts,
                                                    const std::vector<VectorDataType>& constants) {
     const auto cryptoParams = std::dynamic_pointer_cast<CryptoParametersCKKSRNS>(ciphertexts[0]->GetCryptoParameters());
@@ -1436,10 +1434,7 @@ static Ciphertext<DCRTPoly> InnerEvalChebyshevPSBatchRepeated(ConstCiphertext<DC
     return result;
 }
 
-template <typename VectorDataType>
-std::shared_ptr<seriesPowers<DCRTPoly>> internalEvalChebyPolysPS(ConstCiphertext<DCRTPoly>& x,
-                                                                 const std::vector<VectorDataType>& coefficients,
-std::shared_ptr<seriesPowers<DCRTPoly>> internalEvalChebyPolysPS(ConstCiphertext<DCRTPoly>& x, uint32_t degree,
+static std::shared_ptr<seriesPowers<DCRTPoly>> internalEvalChebyPolysPS(ConstCiphertext<DCRTPoly>& x, uint32_t degree,
                                                                  double a, double b) {
     auto degs  = ComputeDegreesPS(degree);
     uint32_t k = degs[0];
@@ -2233,7 +2228,7 @@ Ciphertext<DCRTPoly> AdvancedSHECKKSRNS::EvalChebyshevSeriesPSBatch(ConstCiphert
         }
     }
 
-    return internalEvalChebyshevSeriesPSBatchWithPrecomp(internalEvalChebyPolysPS(x, batchOfCoefficients[0], a, b), batchOfCoefficients);
+    return internalEvalChebyshevSeriesPSBatchWithPrecomp(internalEvalChebyPolysPS(x, Degree(batchOfCoefficients[0]), a, b), batchOfCoefficients);
 }
 Ciphertext<DCRTPoly> AdvancedSHECKKSRNS::EvalChebyshevSeriesPSBatch(ConstCiphertext<DCRTPoly>& x,
                                                                       const std::vector<std::vector<double>>& batchOfCoefficients,
@@ -2248,7 +2243,7 @@ Ciphertext<DCRTPoly> AdvancedSHECKKSRNS::EvalChebyshevSeriesPSBatch(ConstCiphert
         }
     }
 
-    return internalEvalChebyshevSeriesPSBatchWithPrecomp(internalEvalChebyPolysPS(x, batchOfCoefficients[0], a, b), batchOfCoefficients);
+    return internalEvalChebyshevSeriesPSBatchWithPrecomp(internalEvalChebyPolysPS(x, Degree(batchOfCoefficients[0]), a, b), batchOfCoefficients);
 }
 Ciphertext<DCRTPoly> AdvancedSHECKKSRNS::EvalChebyshevSeriesPSBatch(
     ConstCiphertext<DCRTPoly>& x, const std::vector<std::vector<std::complex<double>>>& batchOfCoefficients, double a, double b)
@@ -2263,22 +2258,22 @@ Ciphertext<DCRTPoly> AdvancedSHECKKSRNS::EvalChebyshevSeriesPSBatch(
         }
     }
 
-    return internalEvalChebyshevSeriesPSBatchWithPrecomp(internalEvalChebyPolysPS(x, batchOfCoefficients[0], a, b), batchOfCoefficients);
+    return internalEvalChebyshevSeriesPSBatchWithPrecomp(internalEvalChebyPolysPS(x, Degree(batchOfCoefficients[0]), a, b), batchOfCoefficients);
 }
 Ciphertext<DCRTPoly> AdvancedSHECKKSRNS::EvalChebyshevSeriesPSBatchRepeated(ConstCiphertext<DCRTPoly>& x,
                                                                     const std::vector<std::vector<int64_t>>& batchOfCoefficients,
                                                                     double a, double b, int repetitions) const {
-    return internalEvalChebyshevSeriesPSBatchRepeatedWithPrecomp(internalEvalChebyPolysPS(x, batchOfCoefficients[0], a, b), batchOfCoefficients, repetitions);
+    return internalEvalChebyshevSeriesPSBatchRepeatedWithPrecomp(internalEvalChebyPolysPS(x, Degree(batchOfCoefficients[0]), a, b), batchOfCoefficients, repetitions);
 }
 Ciphertext<DCRTPoly> AdvancedSHECKKSRNS::EvalChebyshevSeriesPSBatchRepeated(ConstCiphertext<DCRTPoly>& x,
                                                                             const std::vector<std::vector<std::complex<double>>>& batchOfCoefficients,
                                                                             double a, double b, int repetitions) const {
-    return internalEvalChebyshevSeriesPSBatchRepeatedWithPrecomp(internalEvalChebyPolysPS(x, batchOfCoefficients[0], a, b), batchOfCoefficients, repetitions);
+    return internalEvalChebyshevSeriesPSBatchRepeatedWithPrecomp(internalEvalChebyPolysPS(x, Degree(batchOfCoefficients[0]), a, b), batchOfCoefficients, repetitions);
 }
 Ciphertext<DCRTPoly> AdvancedSHECKKSRNS::EvalChebyshevSeriesPSBatchRepeated(ConstCiphertext<DCRTPoly>& x,
                                                                             const std::vector<std::vector<double>>& batchOfCoefficients,
                                                                             double a, double b, int repetitions) const {
-    return internalEvalChebyshevSeriesPSBatchRepeatedWithPrecomp(internalEvalChebyPolysPS(x, batchOfCoefficients[0], a, b), batchOfCoefficients, repetitions);
+    return internalEvalChebyshevSeriesPSBatchRepeatedWithPrecomp(internalEvalChebyPolysPS(x, Degree(batchOfCoefficients[0]), a, b), batchOfCoefficients, repetitions);
 }
 
 
