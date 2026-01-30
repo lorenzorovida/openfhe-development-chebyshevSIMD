@@ -105,13 +105,13 @@ void FHECKKSRNS::EvalBootstrapSetup(const CryptoContextImpl<DCRTPoly>& cc, std::
             // We chose the best fit line from our experiments by running ckks-bootstrapping-precision.cpp.
             // The spreadsheet with our experiments is here:
             // https://docs.google.com/spreadsheets/d/1p6-ZG9rBEE9SrkKIt0JjU1aJiYHevzblKOTuhLFW27U
-            uint32_t tmp = BTSlotsEncoding ? std::round(-0.1887 * (2 * std::log2(M / 2) + std::log2(slots)) + 18.763) :
-                                             std::round(-0.265 * (2 * std::log2(M / 2) + std::log2(slots)) + 19.1);
+            uint32_t tmp = BTSlotsEncoding ? std::round(-0.1887 * (2 * std::log2(M / 2) + std::log2(slots)) + 19.763) :
+                                             std::round(-0.2419 * (2 * std::log2(M / 2) + std::log2(slots)) + 19.081);
             m_correctionFactor = std::clamp<uint32_t>(tmp, 7, 14);
         }
         else {
-            uint32_t tmp = BTSlotsEncoding ? std::round(-0.108 * (2 * std::log2(M / 2) + std::log2(slots)) + 14.069) :
-                                             std::round(-0.1871 * (2 * std::log2(M / 2) + std::log2(slots)) + 14.829);
+            uint32_t tmp = BTSlotsEncoding ? std::round(-0.0645 * (2 * std::log2(M / 2) + std::log2(slots)) + 13.855) :
+                                             std::round(-0.1516 * (2 * std::log2(M / 2) + std::log2(slots)) + 14.284);
             m_correctionFactor = std::clamp<uint32_t>(tmp, 6, 13);
         }
     }
