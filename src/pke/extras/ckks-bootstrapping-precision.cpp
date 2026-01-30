@@ -56,19 +56,22 @@ double MeasureStCFirstBootstrapPrecision(uint32_t numSlots, uint32_t correctionF
 std::vector<double> MeasureBootstrapDoubleIterPrecision(uint32_t numSlots, uint32_t correctionFactor);
 std::vector<double> MeasureStCFirstBootstrapDoubleIterPrecision(uint32_t numSlots, uint32_t correctionFactor);
 
+// CalculateApproximationError() calculates the precision number (or approximation error).
+// The higher the precision, the less the error.
+// As recomended in footnote 23 of Security Guidelines for Implementing Homomorphic Encryption
+// (https://cic.iacr.org/p/1/4/26/pdf), precision bits are evaluated as the negative
+// base 2 logarithm of the average L1 norm between results from standard (cleartext) calculation
+// and those computed homomorphically.
 double CalculateApproximationError(const std::vector<std::complex<double>>& result,
                                    const std::vector<std::complex<double>>& expectedResult) {
     if (result.size() != expectedResult.size())
         OPENFHE_THROW("Cannot compare vectors with different numbers of elements");
 
-    // using the Euclidean norm
-    double avrg = 0;
-    for (size_t i = 0; i < result.size(); ++i) {
-        avrg += std::pow(std::abs(result[i] - expectedResult[i]), 2);
-    }
-
-    avrg = std::sqrt(avrg) / result.size();  // get the average
-    return std::abs(std::log2(avrg));        // does not distinguish between good precision and large errors.
+    // using the average
+    double accError = 0;
+    for (size_t i = 0; i < result.size(); ++i)
+        accError += std::abs(result[i] - expectedResult[i]);
+    return std::abs(std::log2(accError / result.size()));
 }
 
 int main(int argc, char* argv[]) {
@@ -79,7 +82,7 @@ int main(int argc, char* argv[]) {
     std::vector<uint32_t> slotsVec = {1 << 3, 1 << 7, 1 << 9, 1 << 11};
     for (uint32_t numSlots : slotsVec) {
         for (uint32_t correctionFactor = minCorrectionFactor; correctionFactor <= maxCorrectionFactor; ++correctionFactor) {
-            std::cout << "`=======================================================================\n";
+            std::cout << "`=======================================================================" << std::endl;
             std::cout << "Number of slots: " << numSlots << "\n";
             std::cout << "Correction Factor: " << correctionFactor << "\n";
 
@@ -110,7 +113,7 @@ int main(int argc, char* argv[]) {
             precision2 /= numIterations;
             std::cout << "Average META-BTS precision over " << numIterations << " iterations: " << precision2 << "\n";
 #endif
-            std::cout << "`=======================================================================\n";
+            std::cout << "`=======================================================================" << std::endl;
         }
     }
 #endif
