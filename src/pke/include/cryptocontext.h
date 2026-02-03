@@ -3665,6 +3665,11 @@ public:
         return GetScheme()->EvalBootstrapStCFirst(ciphertext, numIterations, precision);
     }
 
+    Ciphertext<Element> EvalBootstrapStCFirstBits(ConstCiphertext<Element>& ciphertext, uint32_t numIterations = 1,
+                                              uint32_t precision = 0) const {
+        return GetScheme()->EvalBootstrapStCFirstBits(ciphertext, numIterations, precision);
+    }
+
     template <typename VectorDataType>
     void EvalFBTSetup(const std::vector<VectorDataType>& coeffs, uint32_t numSlots, const BigInteger& PIn,
                       const BigInteger& POut, const BigInteger& Bigq, const PublicKey<DCRTPoly>& pubKey,

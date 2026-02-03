@@ -158,6 +158,10 @@ public:
     Ciphertext<DCRTPoly> EvalBootstrapStCFirst(ConstCiphertext<DCRTPoly>& ciphertext, uint32_t numIterations,
                                                uint32_t precision) const override;
 
+    Ciphertext<DCRTPoly> EvalBootstrapStCFirstBits(ConstCiphertext<DCRTPoly>& ciphertext, uint32_t numIterations,
+                                               uint32_t precision) const override;
+
+
     void EvalFBTSetup(const CryptoContextImpl<DCRTPoly>& cc, const std::vector<std::complex<double>>& coefficients,
                       uint32_t numSlots, const BigInteger& PIn, const BigInteger& POut, const BigInteger& Bigq,
                       const PublicKey<DCRTPoly>& pubKey, const std::vector<uint32_t>& dim1,

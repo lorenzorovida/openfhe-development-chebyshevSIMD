@@ -141,6 +141,11 @@ public:
         OPENFHE_THROW(NOT_SUPPORTED_SIMPLE_ERROR);
     }
 
+    virtual Ciphertext<Element> EvalBootstrapStCFirstBits(ConstCiphertext<Element>& ciphertext, uint32_t numIterations,
+                                                      uint32_t precision) const {
+        OPENFHE_THROW(NOT_SUPPORTED_SIMPLE_ERROR);
+    }
+
     //https://eprint.iacr.org/2024/767
     virtual Ciphertext<Element> EvalBootstrapBinary(ConstCiphertext<Element>& ciphertext, KeyPair<DCRTPoly> key_pair) const {
         OPENFHE_THROW("EvalBootstrap is not implemented for this scheme");

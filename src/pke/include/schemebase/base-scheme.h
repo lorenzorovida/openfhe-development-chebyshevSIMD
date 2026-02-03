@@ -1204,6 +1204,12 @@ public:
         return m_FHE->EvalBootstrapStCFirst(ciphertext, numIterations, precision);
     }
 
+    Ciphertext<Element> EvalBootstrapStCFirstBits(ConstCiphertext<Element>& ciphertext, uint32_t numIterations = 1,
+                                              uint32_t precision = 0) const {
+        VerifyFHEEnabled(__func__);
+        return m_FHE->EvalBootstrapStCFirstBits(ciphertext, numIterations, precision);
+    }
+
     template <typename VectorDataType>
     void EvalFBTSetup(const CryptoContextImpl<Element>& cc, const std::vector<VectorDataType>& coeffs,
                       uint32_t numSlots, const BigInteger& PIn, const BigInteger& POut, const BigInteger& Bigq,
