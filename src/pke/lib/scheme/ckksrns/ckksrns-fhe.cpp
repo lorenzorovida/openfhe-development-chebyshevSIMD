@@ -204,7 +204,7 @@ void FHECKKSRNS::EvalBootstrapSetup(const CryptoContextImpl<DCRTPoly>& cc, std::
         if (N == 1 << 8 || N == 1 << 9 || N == 1 << 10 || N == 1 << 11) {
             scaleDec *= 2048; // VA
         } else if (N == 1 << 12) {
-            scaleDec *= 2048; // NON VA
+            scaleDec *= 2048; // VA
         } else if (N == 1 << 13) {
             scaleDec *= 2048; // VA
         } else if (N == 1 << 14) {
@@ -226,6 +226,8 @@ void FHECKKSRNS::EvalBootstrapSetup(const CryptoContextImpl<DCRTPoly>& cc, std::
             scaleEnc *= 8;
             scaleDec *= 256;
         }
+
+        scaleEnc /= 4096;
 
         // compute # of levels to remain when encoding the coefficients
         // for FLEXIBLEAUTOEXT we do not need extra modulus in auxiliary plaintexts
@@ -1624,6 +1626,7 @@ Ciphertext<DCRTPoly> FHECKKSRNS::EvalBootstrapStCFirstBits(ConstCiphertext<DCRTP
     // TODO: YSP Can be extended to FLEXIBLE* scaling techniques as well as the closeness of 2^p to moduli is no longer needed
     if (st != COMPOSITESCALINGAUTO && st != COMPOSITESCALINGMANUAL) {
         // scale the message back up after Chebyshev interpolation
+        //std::cout << "scalar (è 4?): " << scalar << std::endl;   //it was 4
         algo->MultByIntegerInPlace(ctxtEnc, scalar);
     }
 
@@ -1637,6 +1640,7 @@ Ciphertext<DCRTPoly> FHECKKSRNS::EvalBootstrapStCFirstBits(ConstCiphertext<DCRTP
 #if NATIVEINT != 128
     // 64-bit only: scale back the message to its original scale.
     uint64_t corFactor = static_cast<uint64_t>(1) << std::llround(correction);
+    //std::cout << "corFactor (è 1024?): " << corFactor << std::endl;
     algo->MultByIntegerInPlace(ctxtEnc, corFactor);
 #endif
 
@@ -1650,8 +1654,9 @@ Ciphertext<DCRTPoly> FHECKKSRNS::EvalBootstrapStCFirstBits(ConstCiphertext<DCRTP
      * Instead of returning the ciphertext, we apply the custom cos-like polynomial to correct the error
      */
 
+
     /*
-     * WORKING EH
+     * Working (leave corFactor and scalar)
     std::vector<double> coscoeffs = {-0.6084843552881877, -6.344131569286608e-17, -0.9708678652630182, -2.8548592061789737e-16, 0.30284915526269945, -3.013462495411139e-16, -0.029091933965010686, 0.0, 0.0013922439911705814, 5.075305255429287e-16, -4.0189943581379695e-05, -5.709718412357947e-16, 7.781631905433096e-07, -4.2426379869604194e-16};
 
     ctxtEnc = ciphertext->GetCryptoContext()->EvalChebyshevSeriesPS(ciphertext->GetCryptoContext()->EvalMult(ctxtEnc, 1.0/4096), coscoeffs, -1, 1);
@@ -1664,31 +1669,69 @@ Ciphertext<DCRTPoly> FHECKKSRNS::EvalBootstrapStCFirstBits(ConstCiphertext<DCRTP
     */
 
 
-    std::vector<double> coscoeffs = {1.3042421776440938,
-                                     1.586032892321652e-17,
-                                     0.4854339326315091,
-                                     2.8548592061789737e-16,
-                                     -0.15142457763134987,
-                                     4.440892098500626e-16,
-                                     0.014545966982505066,
-                                     0.0,
-                                     -0.000696121995585251,
-                                     -5.868321701590113e-16,
-                                     2.009497179036471e-05,
-                                     6.661338147750939e-16,
-                                     -3.8908159533113107e-07,
-                                     3.9056059973420685e-16};
 
-    ctxtEnc = ciphertext->GetCryptoContext()->EvalChebyshevSeriesPS(ciphertext->GetCryptoContext()->EvalMult(ctxtEnc, 1.0/4096), coscoeffs, -1, 1);
 
-    for (int i = 0; i < 5; i++) {
+    /*
+     * va
+
+        std::vector<double> coscoeffs = {
+            1.3042421776440938,      1.586032892321652e-17,  0.4854339326315091,    2.8548592061789737e-16,
+            -0.15142457763134987,    4.440892098500626e-16,  0.014545966982505066,  0.0,
+            -0.000696121995585251,   -5.868321701590113e-16, 2.009497179036471e-05, 6.661338147750939e-16,
+            -3.8908159533113107e-07, 3.9056059973420685e-16};
+
+        ctxtEnc = ciphertext->GetCryptoContext()->EvalChebyshevSeriesPS(
+            ciphertext->GetCryptoContext()->EvalMult(ctxtEnc, 1.0 / 4096.0), coscoeffs, -1, 1);
+
+        for (int i = 0; i < 5; i++) {
+            auto term1 = algo->MultByInteger(ctxtEnc, 4);
+            auto term2 = ciphertext->GetCryptoContext()->EvalMult(term1, ctxtEnc);
+            ctxtEnc    = ciphertext->GetCryptoContext()->EvalSub(term1, term2);
+        }
+    }*/
+
+
+    std::vector<double> coscoeffs = {0.8424926075178614,
+                                     0,
+                                     -0.1821017356423849,
+                                     0,
+                                     -0.2282086200252085,
+                                     0,
+                                     -0.18944158983822126,
+                                     0,
+                                     0.0663739366152565,
+                                     0,
+                                     0.2742280687085467,
+                                     0,
+                                     -0.23581858607763376,
+                                     0,
+                                     0.0932423161042029,
+                                     0,
+                                     -0.02306167377675832,
+                                     0,
+                                     0.004018391392239563,
+                                     0,
+                                     -0.0005268221419324767,
+                                     0,
+                                     5.423630683107579e-05,
+                                     0,
+                                     -4.520101975986046e-06,
+                                     0,
+                                     3.111541594155717e-07};
+
+
+    ctxtEnc = ciphertext->GetCryptoContext()->EvalChebyshevSeriesPS(ctxtEnc, coscoeffs, -1, 1);
+
+    for (int i = 0; i < 3; i++) {
         auto term1 = algo->MultByInteger(ctxtEnc, 4);
         auto term2 = ciphertext->GetCryptoContext()->EvalMult(term1, ctxtEnc);
         ctxtEnc = ciphertext->GetCryptoContext()->EvalSub(term1, term2);
     }
 
-
     return ctxtEnc;
+
+
+
 
 }
 

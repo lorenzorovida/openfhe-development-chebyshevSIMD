@@ -1,3 +1,6 @@
+
+
+
 # Building OpenFHE for Best Performance
 
 The default build configuration of OpenFHE focuses on portability and ease of installation.
