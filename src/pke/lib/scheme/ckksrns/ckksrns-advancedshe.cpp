@@ -2222,7 +2222,7 @@ Ciphertext<DCRTPoly> AdvancedSHECKKSRNS::EvalChebyshevSeriesPSBatch(ConstCiphert
         OPENFHE_THROW("The set of coefficients must be as large as the number of slots of the input ciphertext");
 
     auto deg = Degree(batchOfCoefficients[0]);
-    for (int i = 0; i < batchOfCoefficients.size(); i++) {
+    for (auto i = 0; i < batchOfCoefficients.size(); i++) {
         if (Degree(batchOfCoefficients[i]) != deg) {
             OPENFHE_THROW("The polynomials must have all the same degrees");
         }
@@ -2237,7 +2237,7 @@ Ciphertext<DCRTPoly> AdvancedSHECKKSRNS::EvalChebyshevSeriesPSBatch(ConstCiphert
         OPENFHE_THROW("The set of coefficients must be as large as the number of slots of the input ciphertext");
 
     auto deg = Degree(batchOfCoefficients[0]);
-    for (int i = 0; i < batchOfCoefficients.size(); i++) {
+    for (auto i = 0; i < batchOfCoefficients.size(); i++) {
         if (Degree(batchOfCoefficients[i]) != deg) {
             OPENFHE_THROW("The polynomials must have all the same degrees");
         }
@@ -2252,7 +2252,7 @@ Ciphertext<DCRTPoly> AdvancedSHECKKSRNS::EvalChebyshevSeriesPSBatch(
         OPENFHE_THROW("The set of coefficients must be as large as the number of slots of the input ciphertext");
 
     auto deg = Degree(batchOfCoefficients[0]);
-    for (int i = 0; i < batchOfCoefficients.size(); i++) {
+    for (auto i = 0; i < batchOfCoefficients.size(); i++) {
         if (Degree(batchOfCoefficients[i]) != deg) {
             OPENFHE_THROW("The polynomials must have all the same degrees");
         }
