@@ -202,27 +202,18 @@ void FHECKKSRNS::EvalBootstrapSetup(const CryptoContextImpl<DCRTPoly>& cc, std::
         int N = cc.GetRingDimension();
 
         if (N == 1 << 8 || N == 1 << 9 || N == 1 << 10 || N == 1 << 11) {
-            scaleDec *= 2048; // VA
+            scaleDec *= 2048;
         } else if (N == 1 << 12) {
-            scaleDec *= 2048; // VA
+            scaleDec *= 2048;
         } else if (N == 1 << 13) {
-            scaleDec *= 2048; // VA
+            scaleDec *= 2048;
         } else if (N == 1 << 14) {
-            scaleEnc *= 2;    // VA
-            scaleDec *= 1024; // VA
+            scaleEnc *= 2;
+            scaleDec *= 1024;
         } else if (N == 1 << 15) {
-            scaleEnc *= 4;    // VA
-            scaleDec *= 512;  // VA
+            scaleEnc *= 4;
+            scaleDec *= 512;  
         } else if (N == 1 << 16) {
-            // Con sparse packing a 16 andava!!
-            //scaleEnc *= 2;
-            //scaleDec *= 1024;
-
-            // Con questi vanno tutti a 256k
-            //scaleEnc *= 4;
-            //scaleDec *= 1;
-
-            //Con questi vanno 128 e 1024... in teoria funziona (perdo mezzo intervallo però??)
             scaleEnc *= 8;
             scaleDec *= 256;
         }

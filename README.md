@@ -3,6 +3,11 @@
 > 
 > The added (public) function is `EvalChebyshevSeriesPSBatch(c, {coeffs1, coeffs2, ...}, -a, b)`, available in the cryptocontext generated with CKKS. It is possible to run a quick test using the source code in `batched_chebyshev_example.cpp`, you can also check its output in `batched_chebyshev_example-output.txt`. NOTE: **this is a work in progress and errors might occur**.
 
+> [!NOTE]
+> Additionally, this branch contains functionalities to evaluate the cleaning binary bootstrapping
+> 
+> The added (public) function is `EvalBootstrapStCFirstBits(c)`, available in the cryptocontext generated with CKKS. NOTE: **this is an implementation required for some experiments and it is HIGHLY bad written (e.g., check from line 204 of ckksrns-fhe.cpp)**.
+
 
 
 OpenFHE - Open-Source Fully Homomorphic Encryption Library
