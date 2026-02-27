@@ -1,3 +1,14 @@
+02/26/2026: OpenFHE 1.5.0 (development) is released
+
+* Optimizes CKKS bootstrapping and polynomial evaluation for multithreaded scenarios (#908)
+* Adds a new mode of CKKS bootstrapping that achieves a smaller latency and higher precision (#1074)
+* Adds support of multiparty CKKS for the COMPOSINGSCALING* modes (#1123)
+* Updates FHEW/TFHE parameters to reduce the probability of failure (#1098)
+* Changes the default for PREMode from `INDCPA` to `NOT_SET` (#1108)
+* Fixes several bugs, includes several smaller optimizations, and improves the documentation
+
+The detailed list of changes is available at https://github.com/openfheorg/openfhe-development/issues?q=is%3Aissue+milestone%3A%22Release+1.5.0%22
+
 10/20/2025: OpenFHE 1.4.2 (stable) is released
 
 * Fixes a bug introduced by PR #1007 that affected large-depth scenarios for the `HPSPOVERLEVELED` mode of BFV (#1066)

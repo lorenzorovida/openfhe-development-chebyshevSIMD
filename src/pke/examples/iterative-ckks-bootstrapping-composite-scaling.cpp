@@ -1,3 +1,4 @@
+
 //==================================================================================
 // BSD 2-Clause License
 //
@@ -60,20 +61,20 @@ int main(int argc, char* argv[]) {
 
 // CalculateApproximationError() calculates the precision number (or approximation error).
 // The higher the precision, the less the error.
+// As recomended in footnote 23 of Security Guidelines for Implementing Homomorphic Encryption
+// (https://cic.iacr.org/p/1/4/26/pdf), precision bits are evaluated as the negative
+// base 2 logarithm of the average L1 norm between results from standard (cleartext) calculation
+// and those computed homomorphically.
 double CalculateApproximationError(const std::vector<std::complex<double>>& result,
                                    const std::vector<std::complex<double>>& expectedResult) {
     if (result.size() != expectedResult.size())
         OPENFHE_THROW("Cannot compare vectors with different numbers of elements");
 
-    // using the infinity norm
-    double maxError = 0;
-    for (size_t i = 0; i < result.size(); ++i) {
-        double error = std::abs(result[i] - expectedResult[i]);
-        if (maxError < error)
-            maxError = error;
-    }
-
-    return std::abs(std::log2(maxError));
+    // using the average
+    double accError = 0;
+    for (size_t i = 0; i < result.size(); ++i)
+        accError += std::abs(result[i] - expectedResult[i]);
+    return std::abs(std::log2(accError / result.size()));
 }
 
 void IterativeBootstrapExample() {

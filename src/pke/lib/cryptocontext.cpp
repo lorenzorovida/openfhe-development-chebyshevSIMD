@@ -144,38 +144,33 @@ void CryptoContextImpl<Element>::InsertEvalMultKey(const std::vector<EvalKey<Ele
 /////////////////////////////////////////
 
 template <typename Element>
-void CryptoContextImpl<Element>::EvalSumKeyGen(const PrivateKey<Element> privateKey,
-                                               const PublicKey<Element> publicKey) {
+void CryptoContextImpl<Element>::EvalSumKeyGen(const PrivateKey<Element> privateKey) {
     ValidateKey(privateKey);
-    if (publicKey != nullptr && privateKey->GetKeyTag() != publicKey->GetKeyTag()) {
-        OPENFHE_THROW("Public key passed to EvalSumKeyGen does not match private key");
-    }
-
-    auto&& evalKeys = GetScheme()->EvalSumKeyGen(privateKey, publicKey);
+    auto&& evalKeys = GetScheme()->EvalSumKeyGen(privateKey);
     CryptoContextImpl<Element>::InsertEvalAutomorphismKey(evalKeys, privateKey->GetKeyTag());
 }
 
 template <typename Element>
 std::shared_ptr<std::map<uint32_t, EvalKey<Element>>> CryptoContextImpl<Element>::EvalSumRowsKeyGen(
-    const PrivateKey<Element> privateKey, const PublicKey<Element> publicKey, uint32_t rowSize, uint32_t subringDim) {
+    const PrivateKey<Element> privateKey, uint32_t rowSize, uint32_t subringDim) {
     ValidateKey(privateKey);
-    if (publicKey != nullptr && privateKey->GetKeyTag() != publicKey->GetKeyTag())
-        OPENFHE_THROW("Public key passed to EvalSumKeyGen does not match private key");
-
     std::vector<uint32_t> indices;
     auto&& evalKeys = GetScheme()->EvalSumRowsKeyGen(privateKey, rowSize, subringDim, indices);
     CryptoContextImpl<Element>::InsertEvalAutomorphismKey(evalKeys, privateKey->GetKeyTag());
-
     return CryptoContextImpl<Element>::GetPartialEvalAutomorphismKeyMapPtr(privateKey->GetKeyTag(), indices);
+}
+
+// TODO: this is here for backwards compatibility; should remove in v2.0
+template <typename Element>
+inline std::shared_ptr<std::map<uint32_t, EvalKey<Element>>> CryptoContextImpl<Element>::EvalSumRowsKeyGen(
+    const PrivateKey<Element> privateKey, const PublicKey<Element> publicKey, uint32_t rowSize, uint32_t subringDim) {
+    return CryptoContextImpl<Element>::EvalSumRowsKeyGen(privateKey, rowSize, subringDim);
 }
 
 template <typename Element>
 std::shared_ptr<std::map<uint32_t, EvalKey<Element>>> CryptoContextImpl<Element>::EvalSumColsKeyGen(
-    const PrivateKey<Element> privateKey, const PublicKey<Element> publicKey) {
+    const PrivateKey<Element> privateKey) {
     ValidateKey(privateKey);
-    if (publicKey != nullptr && privateKey->GetKeyTag() != publicKey->GetKeyTag())
-        OPENFHE_THROW("Public key passed to EvalSumKeyGen does not match private key");
-
     std::vector<uint32_t> indices;
     auto&& evalKeys = GetScheme()->EvalSumColsKeyGen(privateKey, indices);
     CryptoContextImpl<Element>::InsertEvalAutomorphismKey(evalKeys, privateKey->GetKeyTag());
@@ -274,14 +269,9 @@ void CryptoContextImpl<Element>::ClearEvalSumKeys(const CryptoContext<Element> c
 
 template <typename Element>
 void CryptoContextImpl<Element>::EvalAtIndexKeyGen(const PrivateKey<Element> privateKey,
-                                                   const std::vector<int32_t>& indexList,
-                                                   const PublicKey<Element> publicKey) {
+                                                   const std::vector<int32_t>& indexList) {
     ValidateKey(privateKey);
-    if (publicKey != nullptr && privateKey->GetKeyTag() != publicKey->GetKeyTag()) {
-        OPENFHE_THROW("Public key passed to EvalAtIndexKeyGen does not match private key");
-    }
-
-    auto&& evalKeys = GetScheme()->EvalAtIndexKeyGen(publicKey, privateKey, indexList);
+    auto&& evalKeys = GetScheme()->EvalAtIndexKeyGen(privateKey, indexList);
     CryptoContextImpl<Element>::InsertEvalAutomorphismKey(evalKeys, privateKey->GetKeyTag());
 }
 
@@ -668,7 +658,19 @@ Ciphertext<Element> CryptoContextImpl<Element>::IntMPBootAdjustScale(ConstCipher
 template <typename Element>
 Ciphertext<Element> CryptoContextImpl<Element>::IntMPBootRandomElementGen(const PublicKey<Element> publicKey) const {
     const auto cryptoParamsCKKS = std::dynamic_pointer_cast<CryptoParametersCKKSRNS>(this->GetCryptoParameters());
+    if (cryptoParamsCKKS == nullptr)
+        OPENFHE_THROW("The parameter object is not of the CryptoParametersCKKSRNS type");
+
     return GetScheme()->IntMPBootRandomElementGen(cryptoParamsCKKS, publicKey);
+}
+
+template <typename Element>
+Ciphertext<Element> CryptoContextImpl<Element>::IntMPBootRandomElementGen(ConstCiphertext<Element>& ciphertext) const {
+    const auto cryptoParamsCKKS = std::dynamic_pointer_cast<CryptoParametersCKKSRNS>(ciphertext->GetCryptoParameters());
+    if (cryptoParamsCKKS == nullptr)
+        OPENFHE_THROW("The parameter object is not of the CryptoParametersCKKSRNS type");
+
+    return GetScheme()->IntMPBootRandomElementGen(cryptoParamsCKKS, ciphertext);
 }
 
 template <typename Element>

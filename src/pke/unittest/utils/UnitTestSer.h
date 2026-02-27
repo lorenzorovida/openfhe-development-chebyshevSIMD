@@ -33,8 +33,8 @@
   helper function to test serialization
  */
 
-#ifndef __UNITTESTSER_H__
-#define __UNITTESTSER_H__
+#ifndef __UNITTEST_SER_H__
+#define __UNITTEST_SER_H__
 
 #include "UnitTestException.h"
 #include "cryptocontext-ser.h"
@@ -51,7 +51,7 @@ void UnitTestContextWithSertype(CryptoContext<Element> cc, const ST& sertype,
     try {
         KeyPair<Element> kp = cc->KeyGen();
         cc->EvalMultKeyGen(kp.secretKey);
-        cc->EvalSumKeyGen(kp.secretKey, kp.publicKey);
+        cc->EvalSumKeyGen(kp.secretKey);
 
         std::stringstream s;
         Serial::Serialize(cc, s, sertype);
@@ -102,4 +102,4 @@ void UnitTestContextWithSertype(CryptoContext<Element> cc, const ST& sertype,
     }
 }
 
-#endif  // __UNITTESTSER_H__
+#endif  // __UNITTEST_SER_H__

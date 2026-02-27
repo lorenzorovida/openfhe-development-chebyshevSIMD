@@ -29,24 +29,20 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //==================================================================================
 
-/*
-  Unit tests for the scheme switching
- */
-
-#include "UnitTestUtils.h"
+#include "ciphertext-ser.h"
+#include "cryptocontext-ser.h"
+#include "gtest/gtest.h"
+#include "key/key-ser.h"
+#include "scheme/ckksrns/ckksrns-ser.h"
+#include "scheme/ckksrns/ckksrns-utils.h"
+#include "schemeswitching-data-serializer.h"
 #include "UnitTestCCParams.h"
 #include "UnitTestCryptoContext.h"
-#include "scheme/ckksrns/ckksrns-utils.h"
-#include "cryptocontext-ser.h"
-#include "scheme/ckksrns/ckksrns-ser.h"
-#include "ciphertext-ser.h"
-#include "key/key-ser.h"
-#include "schemeswitching-data-serializer.h"
+#include "UnitTestUtils.h"
 
 #include <iostream>
-#include <vector>
-#include "gtest/gtest.h"
 #include <iterator>
+#include <vector>
 
 using namespace lbcrypto;
 
@@ -164,24 +160,24 @@ static std::vector<TEST_CASE_UTCKKSRNS_SCHEMESWITCH> testCases = {
 #endif
     // ==========================================
     // TestType,              Descr, Scheme,          RDim, MultDepth,   SModSize,     DSize, BatchSz, SecKeyDist,      MaxRelinSkDeg, FModSize,  SecLvl,       KSTech, ScalTech,        LDigits,      PtMod, StdDev, EvalAddCt, KSCt, MultTech, EncTech, PREMode, Dim1,     LogQ, NumValues, Slots
-    { SCHEME_SWITCH_FHEW_CKKS, "01", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH1, SMODSIZE,     DFLT,  DFLT,    UNIFORM_TERNARY, DFLT,          FMODSIZE,  HEStd_NotSet, HYBRID, FIXEDAUTO,       NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT},   { 16, 16 }, 25, 8, 8 },
-    { SCHEME_SWITCH_FHEW_CKKS, "02", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH1, SMODSIZE,     DFLT,  DFLT,    UNIFORM_TERNARY, DFLT,          FMODSIZE,  HEStd_NotSet, HYBRID, FIXEDMANUAL,     NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT},   { 16, 16 }, 25, 8, 8 },
-    { SCHEME_SWITCH_FHEW_CKKS, "03", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH1, SMODSIZE,     DFLT,  DFLT,    UNIFORM_TERNARY, DFLT,          FMODSIZE,  HEStd_NotSet, HYBRID, FIXEDAUTO,       NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT},   { 16, 16 }, 25, 8, RDIM/2 },
-    { SCHEME_SWITCH_FHEW_CKKS, "04", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH1, SMODSIZE,     DFLT,  DFLT,    UNIFORM_TERNARY, DFLT,          FMODSIZE,  HEStd_NotSet, HYBRID, FIXEDMANUAL,     NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT},   { 16, 16 }, 25, 8, RDIM/2 },
-    { SCHEME_SWITCH_FHEW_CKKS, "05", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH1, SMODSIZE,     DFLT,  DFLT,    SPARSE_TERNARY,  DFLT,          FMODSIZE,  HEStd_NotSet, HYBRID, FIXEDAUTO,       NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT},   { 16, 16 }, 25, 8, 8 },
-    { SCHEME_SWITCH_FHEW_CKKS, "06", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH1, SMODSIZE,     DFLT,  DFLT,    SPARSE_TERNARY,  DFLT,          FMODSIZE,  HEStd_NotSet, HYBRID, FIXEDMANUAL,     NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT},   { 16, 16 }, 25, 8, 8 },
-    { SCHEME_SWITCH_FHEW_CKKS, "07", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH1, SMODSIZE,     DFLT,  DFLT,    SPARSE_TERNARY,  DFLT,          FMODSIZE,  HEStd_NotSet, HYBRID, FIXEDAUTO,       NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT},   { 16, 16 }, 25, 8, RDIM/2 },
-    { SCHEME_SWITCH_FHEW_CKKS, "08", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH1, SMODSIZE,     DFLT,  DFLT,    SPARSE_TERNARY,  DFLT,          FMODSIZE,  HEStd_NotSet, HYBRID, FIXEDMANUAL,     NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT},   { 16, 16 }, 25, 8, RDIM/2 },
+    { SCHEME_SWITCH_FHEW_CKKS, "01", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH1, SMODSIZE,     DFLT,  DFLT,    UNIFORM_TERNARY, DFLT,          FMODSIZE,  HEStd_NotSet, HYBRID, FIXEDAUTO,       NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT},   { 16, 16 }, 27, 8, 8 },
+    { SCHEME_SWITCH_FHEW_CKKS, "02", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH1, SMODSIZE,     DFLT,  DFLT,    UNIFORM_TERNARY, DFLT,          FMODSIZE,  HEStd_NotSet, HYBRID, FIXEDMANUAL,     NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT},   { 16, 16 }, 27, 8, 8 },
+    { SCHEME_SWITCH_FHEW_CKKS, "03", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH1, SMODSIZE,     DFLT,  DFLT,    UNIFORM_TERNARY, DFLT,          FMODSIZE,  HEStd_NotSet, HYBRID, FIXEDAUTO,       NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT},   { 16, 16 }, 27, 8, RDIM/2 },
+    { SCHEME_SWITCH_FHEW_CKKS, "04", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH1, SMODSIZE,     DFLT,  DFLT,    UNIFORM_TERNARY, DFLT,          FMODSIZE,  HEStd_NotSet, HYBRID, FIXEDMANUAL,     NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT},   { 16, 16 }, 27, 8, RDIM/2 },
+    { SCHEME_SWITCH_FHEW_CKKS, "05", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH1, SMODSIZE,     DFLT,  DFLT,    SPARSE_TERNARY,  DFLT,          FMODSIZE,  HEStd_NotSet, HYBRID, FIXEDAUTO,       NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT},   { 16, 16 }, 27, 8, 8 },
+    { SCHEME_SWITCH_FHEW_CKKS, "06", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH1, SMODSIZE,     DFLT,  DFLT,    SPARSE_TERNARY,  DFLT,          FMODSIZE,  HEStd_NotSet, HYBRID, FIXEDMANUAL,     NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT},   { 16, 16 }, 27, 8, 8 },
+    { SCHEME_SWITCH_FHEW_CKKS, "07", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH1, SMODSIZE,     DFLT,  DFLT,    SPARSE_TERNARY,  DFLT,          FMODSIZE,  HEStd_NotSet, HYBRID, FIXEDAUTO,       NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT},   { 16, 16 }, 27, 8, RDIM/2 },
+    { SCHEME_SWITCH_FHEW_CKKS, "08", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH1, SMODSIZE,     DFLT,  DFLT,    SPARSE_TERNARY,  DFLT,          FMODSIZE,  HEStd_NotSet, HYBRID, FIXEDMANUAL,     NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT},   { 16, 16 }, 27, 8, RDIM/2 },
 
 #if NATIVEINT != 128
-    { SCHEME_SWITCH_FHEW_CKKS, "09", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH1, SMODSIZE,     DFLT,  DFLT,    UNIFORM_TERNARY,  DFLT,          FMODSIZE,  HEStd_NotSet, HYBRID, FLEXIBLEAUTO,    NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT},   { 16, 16 }, 25, 8, 8 },
-    { SCHEME_SWITCH_FHEW_CKKS, "10", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH1, SMODSIZE,     DFLT,  DFLT,    UNIFORM_TERNARY,  DFLT,          FMODSIZE,  HEStd_NotSet, HYBRID, FLEXIBLEAUTOEXT, NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT},   { 16, 16 }, 25, 8, 8 },
-    { SCHEME_SWITCH_FHEW_CKKS, "11", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH1, SMODSIZE,     DFLT,  DFLT,    UNIFORM_TERNARY,  DFLT,          FMODSIZE,  HEStd_NotSet, HYBRID, FLEXIBLEAUTO,    NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT},   { 16, 16 }, 25, 8, RDIM/2 },
-    { SCHEME_SWITCH_FHEW_CKKS, "12", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH1, SMODSIZE,     DFLT,  DFLT,    UNIFORM_TERNARY,  DFLT,          FMODSIZE,  HEStd_NotSet, HYBRID, FLEXIBLEAUTOEXT, NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT},   { 16, 16 }, 25, 8, RDIM/2 },
-    { SCHEME_SWITCH_FHEW_CKKS, "13", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH1, SMODSIZE,     DFLT,  DFLT,    SPARSE_TERNARY,   DFLT,          FMODSIZE,  HEStd_NotSet, HYBRID, FLEXIBLEAUTO,    NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT},   { 16, 16 }, 25, 8, 8 },
-    { SCHEME_SWITCH_FHEW_CKKS, "14", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH1, SMODSIZE,     DFLT,  DFLT,    SPARSE_TERNARY,   DFLT,          FMODSIZE,  HEStd_NotSet, HYBRID, FLEXIBLEAUTOEXT, NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT},   { 16, 16 }, 25, 8, 8 },
-    { SCHEME_SWITCH_FHEW_CKKS, "15", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH1, SMODSIZE,     DFLT,  DFLT,    SPARSE_TERNARY,   DFLT,          FMODSIZE,  HEStd_NotSet, HYBRID, FLEXIBLEAUTO,    NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT},   { 16, 16 }, 25, 8, RDIM/2 },
-    { SCHEME_SWITCH_FHEW_CKKS, "16", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH1, SMODSIZE,     DFLT,  DFLT,    SPARSE_TERNARY,   DFLT,          FMODSIZE,  HEStd_NotSet, HYBRID, FLEXIBLEAUTOEXT, NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT},   { 16, 16 }, 25, 8, RDIM/2 },
+    { SCHEME_SWITCH_FHEW_CKKS, "09", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH1, SMODSIZE,     DFLT,  DFLT,    UNIFORM_TERNARY,  DFLT,          FMODSIZE,  HEStd_NotSet, HYBRID, FLEXIBLEAUTO,    NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT},   { 16, 16 }, 27, 8, 8 },
+    { SCHEME_SWITCH_FHEW_CKKS, "10", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH1, SMODSIZE,     DFLT,  DFLT,    UNIFORM_TERNARY,  DFLT,          FMODSIZE,  HEStd_NotSet, HYBRID, FLEXIBLEAUTOEXT, NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT},   { 16, 16 }, 27, 8, 8 },
+    { SCHEME_SWITCH_FHEW_CKKS, "11", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH1, SMODSIZE,     DFLT,  DFLT,    UNIFORM_TERNARY,  DFLT,          FMODSIZE,  HEStd_NotSet, HYBRID, FLEXIBLEAUTO,    NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT},   { 16, 16 }, 27, 8, RDIM/2 },
+    { SCHEME_SWITCH_FHEW_CKKS, "12", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH1, SMODSIZE,     DFLT,  DFLT,    UNIFORM_TERNARY,  DFLT,          FMODSIZE,  HEStd_NotSet, HYBRID, FLEXIBLEAUTOEXT, NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT},   { 16, 16 }, 27, 8, RDIM/2 },
+    { SCHEME_SWITCH_FHEW_CKKS, "13", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH1, SMODSIZE,     DFLT,  DFLT,    SPARSE_TERNARY,   DFLT,          FMODSIZE,  HEStd_NotSet, HYBRID, FLEXIBLEAUTO,    NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT},   { 16, 16 }, 27, 8, 8 },
+    { SCHEME_SWITCH_FHEW_CKKS, "14", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH1, SMODSIZE,     DFLT,  DFLT,    SPARSE_TERNARY,   DFLT,          FMODSIZE,  HEStd_NotSet, HYBRID, FLEXIBLEAUTOEXT, NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT},   { 16, 16 }, 27, 8, 8 },
+    { SCHEME_SWITCH_FHEW_CKKS, "15", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH1, SMODSIZE,     DFLT,  DFLT,    SPARSE_TERNARY,   DFLT,          FMODSIZE,  HEStd_NotSet, HYBRID, FLEXIBLEAUTO,    NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT},   { 16, 16 }, 27, 8, RDIM/2 },
+    { SCHEME_SWITCH_FHEW_CKKS, "16", {CKKSRNS_SCHEME, RDIM, MULT_DEPTH1, SMODSIZE,     DFLT,  DFLT,    SPARSE_TERNARY,   DFLT,          FMODSIZE,  HEStd_NotSet, HYBRID, FLEXIBLEAUTOEXT, NUM_LRG_DIGS, DFLT,  DFLT,   DFLT,      DFLT, DFLT,     DFLT,    DFLT},   { 16, 16 }, 27, 8, RDIM/2 },
 
 #endif
     // ==========================================
@@ -258,9 +254,10 @@ class UTCKKSRNS_SCHEMESWITCH : public ::testing::TestWithParam<TEST_CASE_UTCKKSR
 
     // The precision after which we consider two values equal.
     // This is necessary because CKKS works for approximate numbers.
-    const double eps1 = 0.0001;  // When working with binary or small values
-    const double eps2 =
-        0.05;  // When working with conversion to FHEW of larger values, since it implies multiplying by a large value and modular approximation around zero
+    // When working with binary or small values
+    const double eps1 = 0.0001;
+    // When working with conversion to FHEW of larger values, since it implies multiplying by a large value and modular approximation around zero
+    const double eps2 = 0.05;
 
     // CalculateApproximationError() calculates the precision number (or approximation error).
     // The higher the precision, the less the error.
@@ -339,7 +336,7 @@ protected:
             auto ciphertext1     = cc->Encrypt(keyPair.publicKey, plaintext1);
             auto ciphertextAfter = cc->EvalCKKStoFHEW(ciphertext1, testData.numValues);
 
-            std::string failed = "Scheme switching from CKKS to FHEW for sparsely packed ciphertexts fails.";
+            std::string failed = " Scheme switching from CKKS to FHEW for sparsely packed ciphertexts fails.";
 
             LWEPlaintext result;
             for (uint32_t i = 0; i < ciphertextAfter.size(); ++i) {
@@ -370,20 +367,21 @@ protected:
             ccLWE->BinFHEContext::GenerateBinFHEContext(TOY, false, testData.logQ, 0, GINX, false);
             LWEPrivateKey lwesk = ccLWE->KeyGen();
 
-            auto modulus_LWE = 1 << testData.logQ;
-            uint32_t pLWE    = modulus_LWE / (2 * ccLWE->GetBeta().ConvertToInt());  // larger precision
             std::vector<int32_t> x1(testData.slots);
             std::vector<int32_t> x1_values{0, 0, 1, 1, 0, 0, 1, 1};
             std::copy(x1_values.begin(), x1_values.end(), x1.begin());
-            std::vector<int32_t> x2(testData.slots);
-            std::vector<int32_t> x2_values{0, -1, 2, -3, 4, -8, 16, -32};
-            std::copy(x2_values.begin(), x2_values.end(), x2.begin());
             std::vector<LWECiphertext> ctxtsLWE1(testData.slots);
+            auto modulus_LWE = 1 << testData.logQ;
             for (uint32_t i = 0; i < testData.slots; i++) {
                 // encrypted under small plantext modulus p = 4 and ciphertext modulus
                 ctxtsLWE1[i] = ccLWE->Encrypt(lwesk, x1[i], LARGE_DIM, 4, modulus_LWE);
             }
+
+            std::vector<int32_t> x2(testData.slots);
+            std::vector<int32_t> x2_values{0, -1, 2, -3, 4, -8, 16, -32};
+            std::copy(x2_values.begin(), x2_values.end(), x2.begin());
             std::vector<LWECiphertext> ctxtsLWE2(testData.slots);
+            uint32_t pLWE = 1 << (testData.logQ - 12);
             for (uint32_t i = 0; i < testData.slots; i++) {
                 // encrypted under larger plaintext modulus and large ciphertext modulus
                 ctxtsLWE2[i] = ccLWE->Encrypt(lwesk, x2[i], LARGE_DIM, pLWE, modulus_LWE);
@@ -399,7 +397,7 @@ protected:
             plaintextDec->SetLength(testData.numValues);
 
             checkEquality(plaintextDec->GetCKKSPackedValue(), toComplexDoubleVec(x1_values), eps1,
-                          failmsg + "FHEW to CKKS fails for binary messages.");
+                          failmsg + " FHEW to CKKS fails for binary messages.");
 
             cTemp = cc->EvalFHEWtoCKKS(ctxtsLWE2, testData.numValues, testData.slots, pLWE, 0, pLWE);
 
@@ -407,7 +405,7 @@ protected:
             plaintextDec->SetLength(testData.numValues);
 
             checkEquality(plaintextDec->GetCKKSPackedValue(), toComplexDoubleVec(x2_values), eps2,
-                          failmsg + "FHEW to CKKS fails for larger messages.");
+                          failmsg + " FHEW to CKKS fails for larger messages.");
         }
         catch (std::exception& e) {
             std::cerr << "Exception thrown from " << __func__ << "(): " << e.what() << std::endl;
@@ -475,7 +473,7 @@ protected:
             cc->Decrypt(keyPair.secretKey, cResult, &plaintextDec);
             plaintextDec->SetLength(testData.numValues);
 
-            checkEquality(plaintextDec->GetCKKSPackedValue(), inputSign, eps1, failmsg + "EvalCompare fails.");
+            checkEquality(plaintextDec->GetCKKSPackedValue(), inputSign, eps1, failmsg + " EvalCompare fails.");
         }
         catch (std::exception& e) {
             std::cerr << "Exception thrown from " << __func__ << "(): " << e.what() << std::endl;
@@ -539,7 +537,7 @@ protected:
                 std::vector<std::complex<double>> xargminOH(testData.numValues);
                 xargminOH[xargmin] = 1;
                 checkEquality(ptxtMin->GetCKKSPackedValue(), xargminOH, eps1,
-                              failmsg + "EvalMinSchemeSwitching fails.");
+                              failmsg + " EvalMinSchemeSwitching fails.");
             }
             else {
                 ptxtMin->SetLength(1);
@@ -634,7 +632,7 @@ protected:
                 std::vector<std::complex<double>> xargminOH(testData.numValues);
                 xargminOH[xargmin] = 1;
                 checkEquality(ptxtMin->GetCKKSPackedValue(), xargminOH, eps1,
-                              failmsg + "EvalMinSchemeSwitching fails.");
+                              failmsg + " EvalMinSchemeSwitching fails.");
             }
             else {
                 ptxtMin->SetLength(1);
@@ -759,7 +757,7 @@ protected:
             std::vector<std::complex<double>> xargminOH(testData.numValues);
             xargminOH[xargmin] = 1;
             checkEquality(ptxtMin->GetCKKSPackedValue(), xargminOH, eps1,
-                          failmsg + "Serialization for scheme switching fails.");
+                          failmsg + " Serialization for scheme switching fails.");
         }
         catch (std::exception& e) {
             std::cerr << "Exception thrown from " << __func__ << "(): " << e.what() << std::endl;
