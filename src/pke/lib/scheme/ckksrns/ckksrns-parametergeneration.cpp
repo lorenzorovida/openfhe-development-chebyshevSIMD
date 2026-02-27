@@ -130,11 +130,13 @@ bool ParameterGenerationCKKSRNS::ParamsGenCKKSRNSInternal(std::shared_ptr<Crypto
         if (qBound != auxBits)
             ++qBound;
 
+        std::cout << "log(Q): " << qBound << std::endl;
         // Estimate ciphertext modulus Q*P bound (in case of HYBRID P*Q)
         if (ksTech == HYBRID)
             qBound += std::get<0>(CryptoParametersRNS::EstimateLogP(numPartQ, firstModSize, scalingModSize,
                                                                     extraModSize, numPrimes, auxBits, scalTech, true));
 
+        std::cout << "log(QP): " << qBound << std::endl;
         uint32_t he_std_n = StdLatticeParm::FindRingDim(distType, stdLevel, qBound);
 
         if (n == 0) {
@@ -152,6 +154,20 @@ bool ParameterGenerationCKKSRNS::ParamsGenCKKSRNSInternal(std::shared_ptr<Crypto
     }
     else if (n == 0) {
         OPENFHE_THROW("Please specify the ring dimension or desired security level.");
+    } else {
+        uint32_t qBound = firstModSize + (numPrimes - 1) * scalingModSize + extraModSize;
+
+        // we add an extra bit to account for the alternating logic of selecting the RNS moduli in CKKS
+        // ignore the case when there is only one max size modulus
+        if (qBound != auxBits)
+            ++qBound;
+
+        // Estimate ciphertext modulus Q*P bound (in case of HYBRID P*Q)
+        if (ksTech == HYBRID)
+            qBound += std::get<0>(CryptoParametersRNS::EstimateLogP(numPartQ, firstModSize, scalingModSize,
+                                                                    extraModSize, numPrimes, auxBits, scalTech, true));
+
+        std::cout << "log(QP): " << qBound << ", ";
     }
 
     if (encodingParams->GetBatchSize() > n / 2)
