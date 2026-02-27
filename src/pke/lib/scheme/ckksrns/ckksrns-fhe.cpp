@@ -219,6 +219,7 @@ void FHECKKSRNS::EvalBootstrapSetup(const CryptoContextImpl<DCRTPoly>& cc, std::
         }
 
         scaleEnc /= 4096;
+        scaleDec *= 2;
 
         // compute # of levels to remain when encoding the coefficients
         // for FLEXIBLEAUTOEXT we do not need extra modulus in auxiliary plaintexts
@@ -1714,9 +1715,10 @@ Ciphertext<DCRTPoly> FHECKKSRNS::EvalBootstrapStCFirstBits(ConstCiphertext<DCRTP
     ctxtEnc = ciphertext->GetCryptoContext()->EvalChebyshevSeriesPS(ctxtEnc, coscoeffs, -1, 1);
 
 
+
     //The Chebyshev poly is cos with period [-4pi, 4pi], so two iterations bring it to [-16pi, 16pi]
     //that is compatible with K=16 of sparse encapsulated secret
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 2; i++) {
         auto term1 = algo->MultByInteger(ctxtEnc, 4);
         auto term2 = ciphertext->GetCryptoContext()->EvalMult(term1, ctxtEnc);
         ctxtEnc = ciphertext->GetCryptoContext()->EvalSub(term1, term2);
