@@ -214,8 +214,8 @@ void FHECKKSRNS::EvalBootstrapSetup(const CryptoContextImpl<DCRTPoly>& cc, std::
             scaleEnc *= 4;
             scaleDec *= 512;
         } else if (N == 1 << 16) {
-            scaleEnc *= 8;
-            scaleDec *= 256;
+            scaleEnc *= 4;
+            scaleDec *= 512;
         }
 
         scaleEnc /= 4096;
@@ -1683,6 +1683,7 @@ Ciphertext<DCRTPoly> FHECKKSRNS::EvalBootstrapStCFirstBits(ConstCiphertext<DCRTP
     }*/
 
 
+
     std::vector<double> coscoeffs = {0.8424926075178614,
                                      0,
                                      -0.1821017356423849,
@@ -1723,6 +1724,7 @@ Ciphertext<DCRTPoly> FHECKKSRNS::EvalBootstrapStCFirstBits(ConstCiphertext<DCRTP
         auto term2 = ciphertext->GetCryptoContext()->EvalMult(term1, ctxtEnc);
         ctxtEnc = ciphertext->GetCryptoContext()->EvalSub(term1, term2);
     }
+
 
     return ctxtEnc;
 
