@@ -196,12 +196,14 @@ public:
    * @param auxBits size of auxiliar moduli used for hybrid key switching
    * @param scalTech scaling technique
    * @param addOne should an extra bit be added (for CKKS and BGV)
+   * @param isNoiseFloodingMultiparty whether threshold FHE uses noise flooding multiparty mode (BGV and BFV)
    *
    * @return log2 of the modulus and number of RNS limbs.
    */
     static std::pair<double, uint32_t> EstimateLogP(uint32_t numPartQ, double firstModulusSize, double dcrtBits,
                                                     double extraModulusSize, uint32_t numPrimes, uint32_t auxBits,
-                                                    ScalingTechnique scalTech, bool addOne = false);
+                                                    ScalingTechnique scalTech, bool addOne = false,
+                                                    bool isNoiseFloodingMultiparty = false);
 
     /*
    * Estimates the extra modulus bitsize needed for threshold FHE noise flooding (only for BGV and BFV)

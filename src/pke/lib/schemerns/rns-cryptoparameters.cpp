@@ -40,6 +40,10 @@
 #include <string>
 
 namespace lbcrypto {
+namespace {
+    // global used to validate the estimated sizeP value
+    uint32_t sizeP_estimate_global{};
+}
 
 void CryptoParametersRNS::PrecomputeCRTTables(KeySwitchTechnique ksTech, ScalingTechnique scalTech,
                                               EncryptionTechnique encTech, MultiplicationTechnique multTech,
@@ -133,6 +137,16 @@ void CryptoParametersRNS::PrecomputeCRTTables(KeySwitchTechnique ksTech, Scaling
         }
         // Select number of primes in auxiliary CRT basis
         uint32_t sizeP = static_cast<uint32_t>(std::ceil(static_cast<double>(maxBits) / auxBits));
+        // validate the estimated sizeP value
+        if(sizeP_estimate_global > 0) {
+            if(sizeP_estimate_global != sizeP) {
+                auto str = "EstimateLogP() failure: expected sizeP [" + std::to_string(sizeP_estimate_global) +
+                        "], but got sizeP [" + std::to_string(sizeP) + "]";
+                OPENFHE_THROW(str);
+            }
+            // reset sizeP_estimate_global before the next use
+            sizeP_estimate_global = 0;
+        }
 
         uint64_t primeStep = FindAuxPrimeStep();
 
@@ -393,7 +407,8 @@ uint64_t CryptoParametersRNS::FindAuxPrimeStep() const {
 std::pair<double, uint32_t> CryptoParametersRNS::EstimateLogP(uint32_t numPartQ, double firstModulusSize,
                                                               double dcrtBits, double extraModulusSize,
                                                               uint32_t numPrimes, uint32_t auxBits,
-                                                              ScalingTechnique scalTech, bool addOne) {
+                                                              ScalingTechnique scalTech,
+                                                              bool addOne, bool isNoiseFloodingMultiparty) {
     // numPartQ can not be zero as there is a division by numPartQ
     if (numPartQ == 0)
         OPENFHE_THROW("numPartQ is zero");
@@ -419,6 +434,11 @@ std::pair<double, uint32_t> CryptoParametersRNS::EstimateLogP(uint32_t numPartQ,
     qi[0] = firstModulusSize;
     if (extraModulusSize > 0)
         qi[sizeQ - 1] = extraModulusSize;
+    if (isNoiseFloodingMultiparty) {
+        for (size_t i = 1; i < (NoiseFlooding::NUM_MODULI_MULTIPARTY+1); ++i) {
+            qi[i] = NoiseFlooding::MULTIPARTY_MOD_SIZE;
+        }
+    }
 
     // Compute partitions of Q into numPartQ digits
     uint32_t maxBits = 0;
@@ -439,7 +459,8 @@ std::pair<double, uint32_t> CryptoParametersRNS::EstimateLogP(uint32_t numPartQ,
         maxBits++;
 
     // Select number of primes in auxiliary CRT basis
-    auto sizeP = static_cast<uint32_t>(std::ceil(static_cast<double>(maxBits) / auxBits));
+    uint32_t sizeP = static_cast<uint32_t>(std::ceil(static_cast<double>(maxBits) / auxBits));
+    sizeP_estimate_global = sizeP;
 
     return std::make_pair(sizeP * auxBits, sizeP);
 }

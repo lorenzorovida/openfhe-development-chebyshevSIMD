@@ -62,6 +62,9 @@ int main(int argc, char* argv[]) {
 void RunBGVrnsAdditive() {
     CCParams<CryptoContextBGVRNS> parameters;
     parameters.SetPlaintextModulus(65537);
+    parameters.SetMultiplicativeDepth(0);
+    parameters.SetKeySwitchTechnique(BV);
+    parameters.SetDigitSize(10);
 
     // NOISE_FLOODING_MULTIPARTY adds extra noise to the ciphertext before decrypting
     // and is most secure mode of threshold FHE for BFV and BGV.
@@ -82,7 +85,7 @@ void RunBGVrnsAdditive() {
     // Print out the parameters
     std::cout << "p = " << cc->GetCryptoParameters()->GetPlaintextModulus() << std::endl;
     std::cout << "n = " << cc->GetCryptoParameters()->GetElementParams()->GetCyclotomicOrder() / 2 << std::endl;
-    std::cout << "log2 q = " << log2(cc->GetCryptoParameters()->GetElementParams()->GetModulus().ConvertToDouble())
+    std::cout << "log2 q = " << std::log2(cc->GetCryptoParameters()->GetElementParams()->GetModulus().ConvertToDouble())
               << std::endl;
 
     // Initialize Public Key Containers for 3 parties
@@ -223,7 +226,7 @@ void RunBFVrns() {
     // Output the generated parameters
     std::cout << "p = " << cc->GetCryptoParameters()->GetPlaintextModulus() << std::endl;
     std::cout << "n = " << cc->GetCryptoParameters()->GetElementParams()->GetCyclotomicOrder() / 2 << std::endl;
-    std::cout << "log2 q = " << log2(cc->GetCryptoParameters()->GetElementParams()->GetModulus().ConvertToDouble())
+    std::cout << "log2 q = " << std::log2(cc->GetCryptoParameters()->GetElementParams()->GetModulus().ConvertToDouble())
               << std::endl;
 
     // Initialize Public Key Containers for two parties A and B
@@ -436,7 +439,7 @@ void RunCKKS() {
     // Output the generated parameters
     std::cout << "p = " << cc->GetCryptoParameters()->GetPlaintextModulus() << std::endl;
     std::cout << "n = " << cc->GetCryptoParameters()->GetElementParams()->GetCyclotomicOrder() / 2 << std::endl;
-    std::cout << "log2 q = " << log2(cc->GetCryptoParameters()->GetElementParams()->GetModulus().ConvertToDouble())
+    std::cout << "log2 q = " << std::log2(cc->GetCryptoParameters()->GetElementParams()->GetModulus().ConvertToDouble())
               << std::endl;
 
     // Initialize Public Key Containers

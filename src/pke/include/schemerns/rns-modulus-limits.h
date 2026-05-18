@@ -1,7 +1,7 @@
 //==================================================================================
 // BSD 2-Clause License
 //
-// Copyright (c) 2014-2024, NJIT, Duality Technologies Inc. and other contributors
+// Copyright (c) 2014-2026, NJIT, Duality Technologies Inc. and other contributors
 //
 // All rights reserved.
 //
@@ -28,29 +28,22 @@
 // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //==================================================================================
+#ifndef __RNS_MODULUS_LIMITS_H__
+#define __RNS_MODULUS_LIMITS_H__
 
-#ifndef __UNIT_TEST_EXCEPTION_H__
-#define __UNIT_TEST_EXCEPTION_H__
+#include "math/hal/basicint.h"
 
-#include "gtest/gtest.h"
-#include "utils/demangle.h"
+#include <cstdint>
+#include <string_view>
 
-#include <iostream>
-#include <string>
+namespace lbcrypto {
+namespace DCRT_MODULUS {
 
-// TODO (dsuponit): demangle separately for linux, MacOS and Windows. see some links below
-// https://stackoverflow.com/questions/142508/how-do-i-check-os-with-a-preprocessor-directive
-// https://docs.microsoft.com/en-us/windows/win32/debug/retrieving-undecorated-symbol-names
-#if defined(__EMSCRIPTEN__)
-    #define UNIT_TEST_EXCEPTION_TYPE_NAME "EMSCRIPTEN_UNKNOWN"
-#else
-    #define UNIT_TEST_EXCEPTION_TYPE_NAME demangle(__cxxabiv1::__cxa_current_exception_type()->name())
-#endif
+inline constexpr std::uint32_t DEFAULT_EXTRA_MOD_SIZE = 20;
+inline constexpr std::uint32_t MIN_SIZE               = 14;
+inline constexpr std::uint32_t MAX_SIZE               = MAX_MODULUS_SIZE;
 
-// UNIT_TEST_HANDLE_ALL_EXCEPTIONS must always fail
-#define UNIT_TEST_HANDLE_ALL_EXCEPTIONS                                                                        \
-    std::string name(UNIT_TEST_EXCEPTION_TYPE_NAME);                                                           \
-    std::cerr << "Unknown exception of type \"" << name << "\" thrown from " << __func__ << "()" << std::endl; \
-    EXPECT_TRUE(0 == 1) << failmsg;
+}  // namespace DCRT_MODULUS
+}  // namespace lbcrypto
 
-#endif  // __UNIT_TEST_EXCEPTION_H__
+#endif  // __RNS_MODULUS_LIMITS_H__

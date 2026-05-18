@@ -81,10 +81,13 @@ std::vector<uint32_t> SelectLayers(uint32_t logSlots, uint32_t budget = 4) {
 
 uint32_t GetDepthByDegree(size_t d) {
     // clang-format off
-    constexpr uint32_t LOWER_BOUND_DEGREE = 5;
+    constexpr uint32_t LOWER_BOUND_DEGREE = 0;
     constexpr uint32_t UPPER_BOUND_DEGREE = 261631;
     static const std::vector<std::pair<uint32_t, uint32_t>> rangemap = {
-        {     4,  3},  // degree in [     0,      4], depth = 3 - NOTE: Paterson-Stockmeyer not used when degree < 5
+        {     0,  0},  // degree = 0, depth = 0 - NOTE: Paterson-Stockmeyer not used when degree < 5
+        {     1,  1},  // degree = 1, depth = 1 - NOTE: Paterson-Stockmeyer not used when degree < 5
+        {     2,  2},  // degree = 2, depth = 2 - NOTE: Paterson-Stockmeyer not used when degree < 5
+        {     4,  3},  // degree in [     3,      4], depth = 3 - NOTE: Paterson-Stockmeyer not used when degree < 5
         {     5,  4},  // degree in [     5,      5], depth = 4
         {    13,  5},  // degree in [     6,     13], depth = 5
         {    27,  6},  // degree in [    14,     27], depth = 6
@@ -332,9 +335,9 @@ std::vector<uint32_t> ComputeDegreesPS(uint32_t n) {
     std::vector<uint32_t> mlist;
     std::vector<uint32_t> multlist;
     for (uint32_t k = 1; k <= n; ++k) {
-        for (uint32_t m = 1; m <= static_cast<uint32_t>(std::ceil(log2(n / k) + 1) + 1); ++m) {
+        for (uint32_t m = 1; m <= static_cast<uint32_t>(std::ceil(std::log2(n / k) + 1) + 1); ++m) {
             if (n < (k * ((1U << m) - 1))) {
-                if (std::abs(std::floor(log2(k)) - std::floor(std::log2(std::sqrt(n / 2)))) <= 1.0) {
+                if (std::abs(std::floor(std::log2(k)) - std::floor(std::log2(std::sqrt(n / 2)))) <= 1.0) {
                     klist.push_back(k);
                     mlist.push_back(m);
                     multlist.push_back(k + 2 * m + (1U << (m - 1)) - 4);

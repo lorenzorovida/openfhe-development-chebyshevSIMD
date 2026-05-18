@@ -30,10 +30,10 @@
 //==================================================================================
 
 #include "include/gtest/gtest.h"
-#include "UnitTestUtils.h"
+#include "utils/exception.h"
 #include "UnitTestCCParams.h"
 #include "UnitTestCryptoContext.h"
-#include "utils/exception.h"
+#include "UnitTestUtils.h"
 
 #include <iostream>
 #include <sstream>
@@ -235,8 +235,8 @@ static std::vector<TEST_CASE_UTGENERAL_MULTIPARTY> testCases = {
     { BFVRNS_TEST, "30", {BFVRNS_SCHEME,   1024, DFLT,      60,       20,    DFLT,    GAUSSIAN,        DFLT,          DFLT, HEStd_NotSet,         DFLT,   DFLT,         DFLT,    65537, DFLT,   DFLT,      DFLT, HPSPOVERQ,        EXTENDED, DFLT,    FIXED_NOISE_MULTIPARTY},    true,     0, "NA"},
     { BFVRNS_TEST, "31", {BFVRNS_SCHEME,   1024, DFLT,      60,       20,    DFLT,    UNIFORM_TERNARY, DFLT,          DFLT, HEStd_NotSet,         DFLT,   DFLT,         DFLT,    65537, DFLT,   DFLT,      DFLT, HPSPOVERQLEVELED, EXTENDED, DFLT,    FIXED_NOISE_MULTIPARTY},    true,     0, "NA"},
     { BFVRNS_TEST, "32", {BFVRNS_SCHEME,   1024, DFLT,      60,       20,    DFLT,    GAUSSIAN,        DFLT,          DFLT, HEStd_NotSet,         DFLT,   DFLT,         DFLT,    65537, DFLT,   DFLT,      DFLT, HPSPOVERQLEVELED, EXTENDED, DFLT,    FIXED_NOISE_MULTIPARTY},    true,     0, "NA"},
-    { BFVRNS_TEST, "33", {BFVRNS_SCHEME,   1024, DFLT,      60,       20,    DFLT,    UNIFORM_TERNARY, DFLT,          DFLT, HEStd_NotSet,         DFLT,   DFLT,         DFLT,    65537, DFLT,   DFLT,      DFLT, HPS,              STANDARD, DFLT,    NOISE_FLOODING_MULTIPARTY}, false,    0, "NA"},
-    { BFVRNS_TEST, "34", {BFVRNS_SCHEME,   1024, DFLT,      60,       20,    DFLT,    GAUSSIAN,        DFLT,          DFLT, HEStd_NotSet,         DFLT,   DFLT,         DFLT,    65537, DFLT,   DFLT,      DFLT, HPS,              STANDARD, DFLT,    NOISE_FLOODING_MULTIPARTY}, false,    0, "NA"},
+    { BFVRNS_TEST, "33", {BFVRNS_SCHEME,   1024, DFLT,      49,       20,    DFLT,    UNIFORM_TERNARY, DFLT,          DFLT, HEStd_NotSet,         DFLT,   DFLT,         DFLT,    65537, DFLT,   DFLT,      DFLT, HPS,              STANDARD, DFLT,    NOISE_FLOODING_MULTIPARTY}, false,    0, "NA"},
+    { BFVRNS_TEST, "34", {BFVRNS_SCHEME,   1024, DFLT,      49,       20,    DFLT,    GAUSSIAN,        DFLT,          DFLT, HEStd_NotSet,         DFLT,   DFLT,         DFLT,    65537, DFLT,   DFLT,      DFLT, HPS,              STANDARD, DFLT,    NOISE_FLOODING_MULTIPARTY}, false,    0, "NA"},
     { BFVRNS_TEST, "35", {BFVRNS_SCHEME,   1024, DFLT,      60,       20,    DFLT,    UNIFORM_TERNARY, DFLT,          DFLT, HEStd_NotSet,         DFLT,   DFLT,         DFLT,    65537, DFLT,   DFLT,      DFLT, BEHZ,             STANDARD, DFLT,    NOISE_FLOODING_MULTIPARTY}, false,    0, "NA"},
     { BFVRNS_TEST, "36", {BFVRNS_SCHEME,   1024, DFLT,      60,       20,    DFLT,    GAUSSIAN,        DFLT,          DFLT, HEStd_NotSet,         DFLT,   DFLT,         DFLT,    65537, DFLT,   DFLT,      DFLT, BEHZ,             STANDARD, DFLT,    NOISE_FLOODING_MULTIPARTY}, false,    0, "NA"},
     { BFVRNS_TEST, "37", {BFVRNS_SCHEME,   1024, DFLT,      60,       20,    DFLT,    UNIFORM_TERNARY, DFLT,          DFLT, HEStd_NotSet,         DFLT,   DFLT,         DFLT,    65537, DFLT,   DFLT,      DFLT, HPSPOVERQ,        STANDARD, DFLT,    NOISE_FLOODING_MULTIPARTY}, false,    0, "NA"},
@@ -373,14 +373,12 @@ class UTGENERAL_MULTIPARTY : public ::testing::TestWithParam<TEST_CASE_UTGENERAL
     using Element = DCRTPoly;
 
 protected:
-    void SetUp() {}
+    void SetUp() {
+        OpenFHEParallelControls.UnitTestStart();
+    }
     void TearDown() {
-        // destroy all staic key maps
-        CryptoContextImpl<DCRTPoly>::ClearEvalMultKeys();
-        CryptoContextImpl<DCRTPoly>::ClearEvalSumKeys();
-        CryptoContextImpl<DCRTPoly>::ClearEvalAutomorphismKeys();
-
         CryptoContextFactory<Element>::ReleaseAllContexts();
+        OpenFHEParallelControls.UnitTestStop();
     }
 
     // in order to avoid redundancy, UnitTest_MultiParty() uses 2 conditions:
