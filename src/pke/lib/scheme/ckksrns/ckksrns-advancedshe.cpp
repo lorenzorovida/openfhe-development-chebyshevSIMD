@@ -900,7 +900,7 @@ template <typename VectorDataType>
 static Ciphertext<DCRTPoly> InnerEvalChebyshevPSBatch(ConstCiphertext<DCRTPoly>& x,
                                                  const std::vector<std::vector<VectorDataType>>& batchOfCoefficients,
                                                  uint32_t k, uint32_t m, std::vector<Ciphertext<DCRTPoly>>& T,
-                                                 std::vector<Ciphertext<DCRTPoly>>& T2) {
+                                                 std::vector<Ciphertext<DCRTPoly>>& T2, int indexMaxDegree) {
 
     std::vector<std::vector<double>> batchOfCoefficientsDouble;
     batchOfCoefficientsDouble.reserve(batchOfCoefficients.size());
@@ -965,7 +965,8 @@ static Ciphertext<DCRTPoly> InnerEvalChebyshevPSBatch(ConstCiphertext<DCRTPoly>&
 
     // Evaluate c at u
     Ciphertext<DCRTPoly> cu;
-    uint32_t dc = Degree(divcsVec[0]->q);
+
+    uint32_t dc = Degree(divcsVec[indexMaxDegree]->q);
     bool flag_c = false;
     if (dc >= 1) {
         if (dc == 1) {
@@ -1019,19 +1020,19 @@ static Ciphertext<DCRTPoly> InnerEvalChebyshevPSBatch(ConstCiphertext<DCRTPoly>&
     // Evaluate q and s2 at u. If their degrees are larger than k, then recursively apply the Paterson-Stockmeyer algorithm.
     Ciphertext<DCRTPoly> qu;
 
-    if (Degree(divqrVec[0]->q) > k) {
+    if (Degree(divqrVec[indexMaxDegree]->q) > k) {
         std::vector<std::vector<double>> coeffs;
         for (size_t i = 0; i < divqrVec.size(); i++) {
             coeffs.push_back(divqrVec[i]->q);
         }
 
-        qu = InnerEvalChebyshevPSBatch(x, coeffs, k, m - 1, T, T2);
+        qu = InnerEvalChebyshevPSBatch(x, coeffs, k, m - 1, T, T2, indexMaxDegree);
     }
     else {
         // dq = k from construction
         // perform scalar multiplication for all other terms and sum them up if there are non-zero coefficients
 
-        auto qcopy = divqrVec[0]->q;
+        auto qcopy = divqrVec[indexMaxDegree]->q;
 
         qcopy.resize(k);
 
@@ -1054,7 +1055,7 @@ static Ciphertext<DCRTPoly> InnerEvalChebyshevPSBatch(ConstCiphertext<DCRTPoly>&
             // the highest order coefficient will always be a power of two up to 2^{m-1} because q is "monic" but the Chebyshev rule adds a factor of 2
             // we don't need to increase the depth by multiplying the highest order coefficient, but instead checking and summing, since we work with m <= 4.
             Ciphertext<DCRTPoly> sum = T[k - 1]->Clone();
-            uint32_t limit           = log2(ToReal(divqrVec[0]->q.back()));
+            uint32_t limit           = log2(ToReal(divqrVec[indexMaxDegree]->q.back()));
             for (uint32_t i = 0; i < limit; ++i) {
                 sum = cc->EvalAdd(sum, sum);
             }
@@ -1062,7 +1063,7 @@ static Ciphertext<DCRTPoly> InnerEvalChebyshevPSBatch(ConstCiphertext<DCRTPoly>&
         }
         else {
             Ciphertext<DCRTPoly> sum = T[k - 1]->Clone();
-            uint32_t limit           = log2(ToReal(divqrVec[0]->q.back()));
+            uint32_t limit           = log2(ToReal(divqrVec[indexMaxDegree]->q.back()));
             for (uint32_t i = 0; i < limit; ++i) {
                 sum = cc->EvalAdd(sum, sum);
             }
@@ -1084,13 +1085,14 @@ static Ciphertext<DCRTPoly> InnerEvalChebyshevPSBatch(ConstCiphertext<DCRTPoly>&
 
     Ciphertext<DCRTPoly> su;
 
-    if (Degree(s2Vec[0]) > k) {
-        su = InnerEvalChebyshevPSBatch(x, s2Vec, k, m - 1, T, T2);
+
+    if (Degree(s2Vec[indexMaxDegree]) > k) {
+        su = InnerEvalChebyshevPSBatch(x, s2Vec, k, m - 1, T, T2, indexMaxDegree);
     }
     else {
         // ds = k from construction
         // perform scalar multiplication for all other terms and sum them up if there are non-zero coefficients
-        auto scopy = s2Vec[0];
+        auto scopy = s2Vec[indexMaxDegree];
         scopy.resize(k);
         if (Degree(scopy) > 0) {
             std::vector<Ciphertext<DCRTPoly>> ctxs(Degree(scopy));
@@ -1223,7 +1225,15 @@ static Ciphertext<DCRTPoly> InnerEvalChebyshevPSBatchRepeated(ConstCiphertext<DC
 
     // Evaluate c at u
     Ciphertext<DCRTPoly> cu;
-    uint32_t dc = Degree(divcsVec[0]->q);
+
+    int indexMaxDegree = 0;
+    for (auto i = 1; i < divcsVec.size(); i++) {
+        if (Degree(divcsVec[i]->q) > Degree(divcsVec[indexMaxDegree]->q)) {
+            indexMaxDegree = i;
+        }
+    }
+
+    uint32_t dc = Degree(divcsVec[indexMaxDegree]->q);
     bool flag_c = false;
     if (dc >= 1) {
         if (dc == 1) {
@@ -1287,7 +1297,15 @@ static Ciphertext<DCRTPoly> InnerEvalChebyshevPSBatchRepeated(ConstCiphertext<DC
     // Evaluate q and s2 at u. If their degrees are larger than k, then recursively apply the Paterson-Stockmeyer algorithm.
     Ciphertext<DCRTPoly> qu;
 
-    if (Degree(divqrVec[0]->q) > k) {
+    indexMaxDegree = 0;
+    for (auto i = 1; i < divqrVec.size(); i++) {
+        if (Degree(divqrVec[i]->q) > Degree(divqrVec[indexMaxDegree]->q)) {
+            indexMaxDegree = i;
+        }
+    }
+
+
+    if (Degree(divqrVec[indexMaxDegree]->q) > k) {
         std::vector<std::vector<double>> coeffs;
         for (size_t i = 0; i < divqrVec.size(); i++) {
             coeffs.push_back(divqrVec[i]->q);
@@ -1538,7 +1556,7 @@ Ciphertext<DCRTPoly> internalEvalChebyshevSeriesPSWithPrecomp(const std::shared_
 template <typename VectorDataType>
 static inline Ciphertext<DCRTPoly> internalEvalChebyshevSeriesPSBatchWithPrecomp(
     std::shared_ptr<seriesPowers<DCRTPoly>> ctxtPolys,
-    const std::vector<std::vector<VectorDataType>>& batchOfCoefficients) {
+    const std::vector<std::vector<VectorDataType>>& batchOfCoefficients, int indexMaxDegree) {
 
     std::vector<std::vector<double>> batchOfCoefficientsDouble;
     batchOfCoefficientsDouble.reserve(batchOfCoefficients.size());
@@ -1586,6 +1604,8 @@ static inline Ciphertext<DCRTPoly> internalEvalChebyshevSeriesPSBatchWithPrecomp
     for (size_t b = 0; b < batchOfCoefficientsDouble.size(); b++) {
         auto f2 = batchOfCoefficientsDouble[b];
         auto n  = Degree(f2);
+        //n = Degree(batchOfCoefficientsDouble[indexMaxDegree]);
+
         f2.resize(n + 1);
 
         // Add T^{k(2^m - 1)}(y) to the polynomial that has to be evaluated
@@ -1628,7 +1648,10 @@ static inline Ciphertext<DCRTPoly> internalEvalChebyshevSeriesPSBatchWithPrecomp
     Ciphertext<DCRTPoly> cu;
 
     // We use the degree of the first one, they should all be the same anyways
-    uint32_t dc = Degree(divcsVec[0]->q);
+    // update: NO!
+
+
+    uint32_t dc = Degree(divcsVec[indexMaxDegree]->q);
     bool flag_c = false;
     if (dc >= 1) {
         if (dc == 1) {
@@ -1683,17 +1706,17 @@ static inline Ciphertext<DCRTPoly> internalEvalChebyshevSeriesPSBatchWithPrecomp
     Ciphertext<DCRTPoly> qu;
 
     // Again, degrees should all be the same for the different divqrVec
-    if (Degree(divqrVec[0]->q) > k) {
+    if (Degree(divqrVec[indexMaxDegree]->q) > k) {
         std::vector<std::vector<double>> coeffs;
         for (size_t i = 0; i < divqrVec.size(); i++) {
             coeffs.push_back(divqrVec[i]->q);
         }
-        qu = InnerEvalChebyshevPSBatch(T[0], coeffs, k, m - 1, T, T2);
+        qu = InnerEvalChebyshevPSBatch(T[0], coeffs, k, m - 1, T, T2, indexMaxDegree);
     }
     else {
         // dq = k from construction
         // perform scalar multiplication for all other terms and sum them up if there are non-zero coefficients
-        auto qcopy = divqrVec[0]->q;
+        auto qcopy = divqrVec[indexMaxDegree]->q;
         qcopy.resize(k);
 
         if (Degree(qcopy) > 0) {
@@ -1714,7 +1737,7 @@ static inline Ciphertext<DCRTPoly> internalEvalChebyshevSeriesPSBatchWithPrecomp
             // the highest order coefficient will always be a power of two up to 2^{m-1} because q is "monic" but the Chebyshev rule adds a factor of 2
             // we don't need to increase the depth by multiplying the highest order coefficient, but instead checking and summing, since we work with m <= 4.
             Ciphertext<DCRTPoly> sum = T[k - 1]->Clone();
-            uint32_t limit = log2(ToReal(divqrVec[0]->q.back()));
+            uint32_t limit = log2(ToReal(divqrVec[indexMaxDegree]->q.back()));
             for (uint32_t i = 0; i < limit; ++i) {
                 sum = cc->EvalAdd(sum, sum);
             }
@@ -1723,7 +1746,7 @@ static inline Ciphertext<DCRTPoly> internalEvalChebyshevSeriesPSBatchWithPrecomp
         }
         else {
             Ciphertext<DCRTPoly> sum = T[k - 1]->Clone();
-            uint32_t limit = log2(ToReal(divqrVec[0]->q.back()));
+            uint32_t limit = log2(ToReal(divqrVec[indexMaxDegree]->q.back()));
             for (uint32_t i = 0; i < limit; ++i) {
                 sum = cc->EvalAdd(sum, sum);
             }
@@ -1746,13 +1769,13 @@ static inline Ciphertext<DCRTPoly> internalEvalChebyshevSeriesPSBatchWithPrecomp
 
     Ciphertext<DCRTPoly> su;
 
-    if (Degree(s2Vec[0]) > k) {
-        su = InnerEvalChebyshevPSBatch(T[0], s2Vec, k, m - 1, T, T2);
+    if (Degree(s2Vec[indexMaxDegree]) > k) {
+        su = InnerEvalChebyshevPSBatch(T[0], s2Vec, k, m - 1, T, T2, indexMaxDegree);
     }
     else {
         // ds = k from construction
         // perform scalar multiplication for all other terms and sum them up if there are non-zero coefficients
-        auto scopy = s2Vec[0];
+        auto scopy = s2Vec[indexMaxDegree];
         scopy.resize(k);
         if (Degree(scopy) > 0) {
             std::vector<Ciphertext<DCRTPoly>> ctxs(Degree(scopy));
@@ -2228,7 +2251,7 @@ Ciphertext<DCRTPoly> AdvancedSHECKKSRNS::EvalChebyshevSeriesPSBatch(ConstCiphert
         }
     }
 
-    return internalEvalChebyshevSeriesPSBatchWithPrecomp(internalEvalChebyPolysPS(x, Degree(batchOfCoefficients[0]), a, b), batchOfCoefficients);
+    return internalEvalChebyshevSeriesPSBatchWithPrecomp(internalEvalChebyPolysPS(x, Degree(batchOfCoefficients[0]), a, b), batchOfCoefficients, 0);
 }
 Ciphertext<DCRTPoly> AdvancedSHECKKSRNS::EvalChebyshevSeriesPSBatch(ConstCiphertext<DCRTPoly>& x,
                                                                       const std::vector<std::vector<double>>& batchOfCoefficients,
@@ -2237,13 +2260,14 @@ Ciphertext<DCRTPoly> AdvancedSHECKKSRNS::EvalChebyshevSeriesPSBatch(ConstCiphert
         OPENFHE_THROW("The set of coefficients must be as large as the number of slots of the input ciphertext");
 
     auto deg = Degree(batchOfCoefficients[0]);
+
     for (uint32_t i = 0; i < batchOfCoefficients.size(); i++) {
         if (Degree(batchOfCoefficients[i]) != deg) {
             OPENFHE_THROW("The polynomials must have all the same degrees");
         }
     }
 
-    return internalEvalChebyshevSeriesPSBatchWithPrecomp(internalEvalChebyPolysPS(x, Degree(batchOfCoefficients[0]), a, b), batchOfCoefficients);
+    return internalEvalChebyshevSeriesPSBatchWithPrecomp(internalEvalChebyPolysPS(x, deg, a, b), batchOfCoefficients, 0);
 }
 Ciphertext<DCRTPoly> AdvancedSHECKKSRNS::EvalChebyshevSeriesPSBatch(
     ConstCiphertext<DCRTPoly>& x, const std::vector<std::vector<std::complex<double>>>& batchOfCoefficients, double a, double b)
@@ -2258,7 +2282,7 @@ Ciphertext<DCRTPoly> AdvancedSHECKKSRNS::EvalChebyshevSeriesPSBatch(
         }
     }
 
-    return internalEvalChebyshevSeriesPSBatchWithPrecomp(internalEvalChebyPolysPS(x, Degree(batchOfCoefficients[0]), a, b), batchOfCoefficients);
+    return internalEvalChebyshevSeriesPSBatchWithPrecomp(internalEvalChebyPolysPS(x, Degree(batchOfCoefficients[0]), a, b), batchOfCoefficients, 0);
 }
 Ciphertext<DCRTPoly> AdvancedSHECKKSRNS::EvalChebyshevSeriesPSBatchRepeated(ConstCiphertext<DCRTPoly>& x,
                                                                     const std::vector<std::vector<int64_t>>& batchOfCoefficients,
